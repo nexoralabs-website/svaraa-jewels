@@ -1,0 +1,27 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+class Category extends Model
+{
+    protected $fillable = ['name', 'slug', 'image', 'status', 'meta_title', 'meta_description'];
+
+    public function products(): HasMany
+    {
+        return $this->hasMany(Product::class);
+    }
+
+    public function getSeoTitleAttribute(): string
+    {
+        return $this->meta_title ?: $this->name . ' Jewellery | Svaraa Jewels';
+    }
+
+    public function getSeoDescriptionAttribute(): string
+    {
+        return $this->meta_description
+            ?: 'Shop our exclusive ' . $this->name . ' collection at Svaraa Jewels. Handcrafted luxury jewellery for every occasion.';
+    }
+}

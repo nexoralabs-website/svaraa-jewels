@@ -1,11 +1,727 @@
-@import 'tailwindcss';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
-@source '../../storage/framework/views/*.php';
-@source '../**/*.blade.php';
-@source '../**/*.js';
+@layer components {
+    .card-premium {
+        @apply rounded-[1.75rem] border border-[#e8dccb] bg-white/80 shadow-[0_20px_60px_rgba(46,26,18,0.08)] backdrop-blur;
+    }
 
-@theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+    .section-shell {
+        @apply rounded-[2rem] border border-[#e8dccb] bg-white/80 shadow-[0_20px_60px_rgba(46,26,18,0.08)] backdrop-blur;
+    }
+}
+
+@layer utilities {
+    .no-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+
+    .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+
+    .hero-card {
+        transform-style: preserve-3d;
+        transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.6s ease, border-color 0.35s ease;
+        will-change: transform;
+    }
+
+    .hero-card:hover {
+        transform: perspective(1400px) rotateY(-8deg) rotateX(5deg) translateY(-8px) translateZ(16px);
+        box-shadow: 0 32px 90px rgba(46, 26, 18, 0.16);
+    }
+
+    .hero-card::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(125deg, transparent 0%, rgba(255, 255, 255, 0.45) 45%, transparent 70%);
+        transform: translateX(-140%);
+        transition: transform 0.7s ease;
+        pointer-events: none;
+    }
+
+    .hero-card:hover::before {
+        transform: translateX(140%);
+    }
+
+    .card-tilt {
+        transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.45s ease, border-color 0.35s ease;
+        transform-style: preserve-3d;
+        will-change: transform;
+    }
+
+    .card-tilt:hover {
+        transform: perspective(1000px) rotateX(3deg) rotateY(-5deg) translateY(-8px) translateZ(8px);
+        box-shadow: 0 24px 60px rgba(46, 26, 18, 0.13);
+    }
+
+    .floating-card {
+        animation: floatCard 6.5s ease-in-out infinite;
+    }
+
+    .ambient-glow {
+        animation: pulseGlow 9s ease-in-out infinite;
+    }
+
+    .reveal-up {
+        animation: revealUp 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+
+    .luxury-bg {
+        position: relative;
+        isolation: isolate;
+        overflow: hidden;
+    }
+
+    .luxury-bg::before,
+    .luxury-bg::after {
+        content: '';
+        position: absolute;
+        inset: auto;
+        border-radius: 9999px;
+        filter: blur(70px);
+        pointer-events: none;
+        z-index: -10;
+        opacity: 0.7;
+    }
+
+    .luxury-bg::before {
+        left: -8%;
+        top: 8%;
+        width: 24rem;
+        height: 24rem;
+        background: rgba(200, 163, 93, 0.24);
+        animation: driftBlob 18s ease-in-out infinite alternate;
+    }
+
+    .luxury-bg::after {
+        right: -8%;
+        bottom: 6%;
+        width: 22rem;
+        height: 22rem;
+        background: rgba(110, 15, 18, 0.16);
+        animation: driftBlobAlt 22s ease-in-out infinite alternate;
+    }
+
+    .floating-particle {
+        position: absolute;
+        border-radius: 9999px;
+        background: radial-gradient(circle, rgba(255, 244, 214, 0.95) 0%, rgba(200, 163, 93, 0.38) 45%, transparent 72%);
+        animation: floatParticle 10s ease-in-out infinite;
+        pointer-events: none;
+        z-index: -10;
+        filter: blur(0.6px);
+    }
+
+    .floating-particle--1 {
+        width: 0.7rem;
+        height: 0.7rem;
+        top: 12%;
+        left: 12%;
+        animation-delay: -1.4s;
+    }
+
+    .floating-particle--2 {
+        width: 0.95rem;
+        height: 0.95rem;
+        top: 24%;
+        right: 16%;
+        animation-delay: -3.2s;
+    }
+
+    .floating-particle--3 {
+        width: 0.55rem;
+        height: 0.55rem;
+        bottom: 16%;
+        left: 20%;
+        animation-delay: -5.4s;
+    }
+
+    .floating-particle--4 {
+        width: 0.8rem;
+        height: 0.8rem;
+        top: 45%;
+        right: 8%;
+        animation-delay: -7.2s;
+    }
+
+    .floating-particle--5 {
+        width: 0.6rem;
+        height: 0.6rem;
+        bottom: 35%;
+        left: 5%;
+        animation-delay: -9s;
+    }
+
+    .soft-spotlight {
+        position: absolute;
+        inset: -20% 10% auto auto;
+        width: 26rem;
+        height: 26rem;
+        border-radius: 9999px;
+        background: radial-gradient(circle, rgba(255, 244, 214, 0.75) 0%, rgba(255, 244, 214, 0) 70%);
+        filter: blur(24px);
+        pointer-events: none;
+        animation: sweepSpotlight 11s ease-in-out infinite;
+    }
+
+    .glass-card {
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.82), rgba(250, 237, 216, 0.7));
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 14px 42px rgba(46, 26, 18, 0.08);
+        backdrop-filter: blur(16px);
+    }
+
+    .collection-card {
+        animation: cardReveal 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+        transition: transform 0.4s ease, box-shadow 0.4s ease, border-color 0.35s ease;
+        will-change: transform;
+    }
+
+    .collection-card:hover {
+        transform: scale(1.03) translateY(-6px) translateZ(8px);
+        box-shadow: 0 24px 60px rgba(46, 26, 18, 0.12);
+    }
+
+    .collection-card::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(120deg, transparent 28%, rgba(255, 255, 255, 0.45) 45%, transparent 60%);
+        transform: translateX(-140%);
+        transition: transform 0.65s ease;
+        pointer-events: none;
+    }
+
+    .collection-card:hover::before {
+        transform: translateX(140%);
+    }
+
+    .collection-card .collection-image {
+        transition: transform 0.7s ease;
+    }
+
+    .collection-card:hover .collection-image {
+        transform: scale(1.08);
+    }
+
+    .product-card {
+        transition: transform 0.4s ease, box-shadow 0.4s ease, border-color 0.35s ease;
+        will-change: transform;
+        animation: cardReveal 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+
+    .product-card:hover {
+        transform: translateY(-8px) scale(1.01);
+        box-shadow: 0 24px 70px rgba(46, 26, 18, 0.12);
+    }
+
+    .product-card .product-visual {
+        transition: transform 0.45s ease, filter 0.45s ease;
+    }
+
+    .product-card:hover .product-visual {
+        transform: scale(1.06) rotate(2deg);
+        filter: saturate(1.05);
+    }
+
+    .product-actions {
+        opacity: 0;
+        transform: translateY(8px);
+        transition: all 0.35s ease;
+    }
+
+    .product-card:hover .product-actions {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    .wishlist-badge {
+        animation: wishPulse 2.15s ease-in-out infinite;
+    }
+
+    .section-reveal {
+        animation: sectionReveal 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+
+    .stagger-1 {
+        animation-delay: 80ms;
+    }
+
+    .stagger-2 {
+        animation-delay: 160ms;
+    }
+
+    .stagger-3 {
+        animation-delay: 240ms;
+    }
+
+    .ornament-ring {
+        animation: spinSlow 16s linear infinite;
+    }
+
+    .ornament-ring--alt {
+        animation: spinSlowReverse 20s linear infinite;
+    }
+
+    .nav-link,
+    .icon-action,
+    .footer-link,
+    .cta-pill {
+        transition: transform 0.25s ease, color 0.25s ease, background-color 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .nav-link:hover,
+    .icon-action:hover,
+    .cta-pill:hover {
+        transform: translateY(-2px);
+    }
+
+    .footer-link:hover {
+        transform: translateY(-1px);
+    }
+
+    .icon-action:hover {
+        animation: subtlePulse 0.35s ease;
+    }
+
+    /* Luxury Text Transitions */
+    .luxury-text {
+        animation: luxuryTextReveal 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+        letter-spacing: -0.02em;
+    }
+
+    .luxury-pill {
+        animation: pillFloat 4s ease-in-out infinite;
+    }
+
+    .luxury-cta {
+        position: relative;
+        overflow: hidden;
+    }
+
+    .luxury-cta::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%);
+        transform: translateX(-100%);
+        transition: transform 0.6s ease;
+    }
+
+    .luxury-cta:hover::after {
+        transform: translateX(100%);
+    }
+
+    .luxury-stats {
+        animation: statFloat 5s ease-in-out infinite;
+        animation-delay: calc(var(--i, 0) * 0.5s);
+    }
+
+    .luxury-composition {
+        position: relative;
+        overflow: hidden;
+    }
+
+    .luxury-composition::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at 20% 20%, rgba(200,163,93,0.15) 0%, transparent 50%),
+                    radial-gradient(circle at 80% 80%, rgba(110,15,18,0.1) 0%, transparent 50%);
+        pointer-events: none;
+    }
+
+    .luxury-panel {
+        transform-style: preserve-3d;
+        transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    .luxury-highlight {
+        position: relative;
+        overflow: hidden;
+    }
+
+    .luxury-highlight::before {
+        content: '';
+        position: absolute;
+        inset: -50%;
+        background: linear-gradient(45deg, transparent 40%, rgba(255,255,255,0.4) 50%, transparent 60%);
+        animation: shineSweep 3s ease-in-out infinite;
+        pointer-events: none;
+    }
+
+    .luxury-badge {
+        animation: badgePulse 3s ease-in-out infinite;
+    }
+
+    /* Scroll Cue */
+    .scroll-cue {
+        animation: scrollCueFloat 2s ease-in-out infinite;
+    }
+
+    .scroll-dot {
+        animation: scrollDotBounce 1.5s ease-in-out infinite;
+    }
+
+    /* Signature Collection */
+    .signature-grid {
+        display: grid;
+        grid-template-columns: repeat(12, 1fr);
+        gap: 1.5rem;
+    }
+
+    .signature-card {
+        position: relative;
+        overflow: hidden;
+        border-radius: 1.75rem;
+        border: 1px solid rgba(232, 220, 203, 0.8);
+        background: rgba(255, 253, 249, 0.9);
+        box-shadow: 0 20px 60px rgba(46, 26, 18, 0.06);
+        transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.5s ease;
+        transform-style: preserve-3d;
+    }
+
+    .signature-card:hover {
+        transform: translateY(-12px) rotateX(2deg) rotateY(-3deg);
+        box-shadow: 0 30px 80px rgba(46, 26, 18, 0.12);
+    }
+
+    .signature-card::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(200, 163, 93, 0.25) 0%, transparent 50%);
+        opacity: 0;
+        transition: opacity 0.4s ease;
+        pointer-events: none;
+    }
+
+    .signature-card:hover::before {
+        opacity: 1;
+    }
+
+    .signature-card::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(120deg, transparent 0%, rgba(255,255,255,0.5) 45%, transparent 70%);
+        transform: translateX(-150%);
+        transition: transform 0.8s ease;
+        pointer-events: none;
+    }
+
+    .signature-card:hover::after {
+        transform: translateX(150%);
+    }
+
+    /* Product Card Premium */
+    .product-premium {
+        position: relative;
+        overflow: hidden;
+    }
+
+    .product-premium .product-image-container {
+        position: relative;
+        overflow: hidden;
+    }
+
+    .product-premium .product-image-container::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(120deg, transparent 0%, rgba(255,255,255,0.6) 45%, transparent 70%);
+        transform: translateX(-150%);
+        transition: transform 0.7s ease;
+        pointer-events: none;
+    }
+
+    .product-premium:hover .product-image-container::before {
+        transform: translateX(150%);
+    }
+
+    .product-premium .product-cta {
+        opacity: 0;
+        transform: translateY(10px);
+        transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    .product-premium:hover .product-cta {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    /* Jewelry Detail */
+    .jewelry-detail {
+        position: relative;
+    }
+
+    .jewelry-detail::before {
+        content: '';
+        position: absolute;
+        inset: -1rem;
+        background: radial-gradient(circle, rgba(200,163,93,0.15) 0%, transparent 70%);
+        filter: blur(20px);
+        animation: detailGlow 4s ease-in-out infinite;
+        pointer-events: none;
+    }
+
+    .jewelry-accent {
+        animation: accentRotate 8s linear infinite;
+    }
+
+    /* Instagram Grid */
+    .instagram-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1rem;
+    }
+
+    .instagram-item {
+        position: relative;
+        overflow: hidden;
+        border-radius: 1rem;
+        aspect-ratio: 1;
+        background: linear-gradient(135deg, rgba(255,248,239,1), rgba(240,223,180,0.9));
+        transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    .instagram-item:hover {
+        transform: scale(1.05);
+    }
+
+    .instagram-item::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(to top, rgba(46,26,18,0.7) 0%, transparent 60%);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .instagram-item:hover::before {
+        opacity: 1;
+    }
+
+    .instagram-overlay {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        padding: 1rem;
+        opacity: 0;
+        transform: translateY(10px);
+        transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    .instagram-item:hover .instagram-overlay {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes floatCard {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-8px); }
+}
+
+@keyframes pulseGlow {
+    0%, 100% { opacity: 0.86; }
+    50% { opacity: 1; }
+}
+
+@keyframes revealUp {
+    0% {
+        opacity: 0;
+        transform: translateY(16px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes driftBlob {
+    0% { transform: translate3d(0, 0, 0) scale(1); }
+    100% { transform: translate3d(12px, -18px, 0) scale(1.06); }
+}
+
+@keyframes driftBlobAlt {
+    0% { transform: translate3d(0, 0, 0) scale(1); }
+    100% { transform: translate3d(-14px, 18px, 0) scale(1.08); }
+}
+
+@keyframes floatParticle {
+    0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+    50% { transform: translate3d(8px, -12px, 0) scale(1.08); }
+}
+
+@keyframes sweepSpotlight {
+    0%, 100% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.65; }
+    50% { transform: translate3d(-16px, 10px, 0) scale(1.05); opacity: 0.9; }
+}
+
+@keyframes cardReveal {
+    0% {
+        opacity: 0;
+        transform: translateY(18px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes sectionReveal {
+    0% {
+        opacity: 0;
+        transform: translateY(24px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes spinSlow {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@keyframes spinSlowReverse {
+    from { transform: rotate(360deg); }
+    to { transform: rotate(0deg); }
+}
+
+@keyframes wishPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.06); }
+}
+
+@keyframes subtlePulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+    100% { transform: scale(1); }
+}
+
+/* Luxury Text Reveal */
+@keyframes luxuryTextReveal {
+    0% {
+        opacity: 0;
+        transform: translateY(20px);
+        filter: blur(4px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+        filter: blur(0);
+    }
+}
+
+@keyframes pillFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-3px); }
+}
+
+@keyframes statFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+}
+
+@keyframes shineSweep {
+    0% { transform: translateX(-100%) rotate(45deg); }
+    100% { transform: translateX(100%) rotate(45deg); }
+}
+
+@keyframes badgePulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.05); opacity: 0.9; }
+}
+
+/* Scroll Cue */
+@keyframes scrollCueFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+}
+
+@keyframes scrollDotBounce {
+    0%, 100% { transform: translate(-50%, 0); opacity: 1; }
+    50% { transform: translate(-50%, 12px); opacity: 0.5; }
+}
+
+/* Jewelry Detail */
+@keyframes detailGlow {
+    0%, 100% { opacity: 0.6; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.1); }
+}
+
+@keyframes accentRotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@media (max-width: 1024px) {
+    .instagram-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .floating-particle {
+        opacity: 0.28;
+        transform: scale(0.8);
+    }
+
+    .floating-particle--4,
+    .floating-particle--5 {
+        display: none;
+    }
+
+    .soft-spotlight {
+        opacity: 0.7;
+        filter: blur(18px);
+    }
+
+    .hero-card,
+    .card-tilt,
+    .collection-card,
+    .product-card,
+    .signature-card {
+        transform: none !important;
+    }
+
+    .signature-card:hover,
+    .instagram-item:hover {
+        transform: none;
+    }
+
+    .ambient-glow {
+        animation-duration: 16s;
+    }
+
+    .floating-card {
+        animation-duration: 9s;
+    }
+
+    .luxury-bg::before,
+    .luxury-bg::after {
+        opacity: 0.6;
+        filter: blur(50px);
+    }
+
+    .instagram-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
 }
