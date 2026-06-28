@@ -2,8 +2,13 @@
 
 namespace App\Filament\Admin\Pages;
 
+use App\Enums\UploadBatchStatus;
+use App\Jobs\GeneratePreviewMetadataJob;
+use App\Jobs\ProcessPdfBulkUploadJob;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\UploadBatch;
+use App\Services\BulkUploadService;
 use App\Services\PdfProductImportService;
 use App\Services\ProductDescriptionService;
 use Filament\Forms\Components\FileUpload;
@@ -13,7 +18,9 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Concerns\RestrictsFileUploadsToSchemaComponents;
 use Filament\Schemas\Schema;
+use Illuminate\Support\Bus;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -43,6 +50,11 @@ class BulkUploadProducts extends Page implements HasForms
     protected static ?int    $navigationSort  = 2;
     protected static ?string $title           = 'Bulk Upload Products';
     protected string         $view            = 'filament.admin.pages.bulk-upload-products';
+
+    public static function canAccess(): bool
+    {
+        return Gate::allows('viewAny', UploadBatch::class);
+    }
 
     public static function getNavigationIcon(): string|\BackedEnum|null
     {
@@ -105,6 +117,14 @@ class BulkUploadProducts extends Page implements HasForms
     public int  $summaryFailed        = 0;
     public bool $showSummary          = false;
 
+    // ── DB pipeline state (Phase 5) ───────────────────────────────────────
+
+    /** UUID of the most recently created UploadBatch (for grid filter) */
+    public ?string $activeBatchUuid = null;
+
+    /** Show the DB-backed review grid instead of in-memory rows */
+    public bool $showDbGrid = false;
+
     // ── Form ──────────────────────────────────────────────────────────────────
 
     public function form(Schema $schema): Schema
@@ -128,26 +148,22 @@ class BulkUploadProducts extends Page implements HasForms
                             $this->processPdfUploads($state);
                         }
                     }),
-FileUpload::make('imageUploadData')
-                     ->label('Product Images')
-                     ->helperText('JPEG · PNG · WebP — up to 50 MB each. Name, category, and description are auto-generated.')
-                     ->image()
-                     ->imageResizeMode('contain')
-                     ->multiple()
-                     ->disk('public')
-                     ->directory('products')
-                     ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
-                     ->maxSize(51200)
-                     ->panelLayout('grid')
-                     ->imagePreviewHeight('80')
-                     ->reorderable()
-                     ->appendFiles()
-                     ->live()
-                     ->afterStateUpdated(function (?array $state) {
-                         if (! empty($state)) {
-                             $this->processImageUploads($state);
-                         }
-                     }),
+                FileUpload::make('images')
+                    ->label('Product Images')
+                    ->helperText('JPEG · PNG · WebP — up to 50 MB each. Click "Process Images" after uploading.')
+                    ->image()
+                    ->multiple()
+                    ->disk('public')
+                    ->directory('products')
+                    ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
+                    ->maxSize(51200)
+                    ->panelLayout('grid')
+                    ->maxParallelUploads(1)
+                    ->fetchFileInformation(false)
+                    ->loadingIndicatorPosition('left')
+                    ->imagePreviewHeight('180')
+                    ->appendFiles()
+                    ->afterStateUpdated(fn () => null),
             ]);
     }
 
@@ -176,6 +192,36 @@ FileUpload::make('imageUploadData')
                 // Non-fatal — images will fall back to placeholder card
             }
         }
+    }
+
+    // ── Manual trigger for image processing ─────────────────────────────────
+
+    /**
+     * Called from the Blade template after images finish uploading.
+     * Reads the current form state and kicks off metadata generation.
+     */
+    public function processUploadedImages(): void
+    {
+        $paths = data_get($this->data, 'images', []);
+
+        if (empty($paths)) {
+            Notification::make()
+                ->title('No images uploaded yet.')
+                ->warning()
+                ->send();
+            return;
+        }
+
+        $start = microtime(true);
+        logger()->info('processUploadedImages: start', ['count' => count($paths)]);
+
+        $this->processImageUploads($paths);
+
+        $elapsed = round(microtime(true) - $start, 2);
+        logger()->info('processUploadedImages: done', [
+            'count'   => count($paths),
+            'elapsed' => "{$elapsed}s",
+        ]);
     }
 
     // ── Image upload pipeline (unchanged behaviour) ───────────────────────────
@@ -624,7 +670,7 @@ FileUpload::make('imageUploadData')
                     'description'      => $description,
                     'thumbnail'        => $thumbnailPath,
                     'stock'            => (int) ($row['stock'] ?? 1),
-                    'status'           => $status,
+                    'status'           => $status === 'active' ? 1 : 0,
                     'meta_title'       => $metaTitle,
                     'meta_description' => $metaDescription,
                     // slug auto-generated by Product::boot()
@@ -687,6 +733,63 @@ FileUpload::make('imageUploadData')
             ->title("{$count} product(s) {$label}.")
             ->success()
             ->send();
+    }
+
+    // ── DB pipeline dispatch (Phase 5) ───────────────────────────────────
+
+    /**
+     * Dispatch a full DB-backed processing pipeline for an already-uploaded PDF.
+     *
+     * Creates an UploadBatch, queues ProcessPdfBulkUploadJob → GeneratePreviewMetadataJob,
+     * then opens the DB review grid so the admin can monitor and review rows as they appear.
+     *
+     * @param string $filePath   Storage-relative path on the public disk (e.g. 'pdf-uploads/foo.pdf')
+     * @param int    $totalPages Total page count of the PDF
+     */
+    public function dispatchPdfPipeline(string $filePath, int $totalPages = 1): void
+    {
+        $user  = auth()->user();
+        $batch = app(BulkUploadService::class)->createBatch($user, [
+            'source_file' => $filePath,
+            'uploaded_at' => now()->toIso8601String(),
+        ]);
+
+        $batch->update(['total_pages' => $totalPages]);
+
+        // Chain: extract → enrich metadata (publish is manual via review grid)
+        \Illuminate\Support\Facades\Bus::chain([
+            new ProcessPdfBulkUploadJob($batch->id, $filePath, 1, $totalPages),
+            new GeneratePreviewMetadataJob($batch->id),
+        ])->dispatch();
+
+        $this->activeBatchUuid = $batch->id;
+        $this->showDbGrid      = true;
+        $this->step            = 'review';
+
+        Notification::make()
+            ->title('Processing started.')
+            ->body("Batch {$batch->id} queued. Preview rows will appear in the grid below.")
+            ->success()
+            ->send();
+    }
+
+    /**
+     * Toggle to the DB-backed review grid without re-uploading.
+     * Useful for admins who want to review previously extracted batches.
+     */
+    public function openReviewGrid(?string $batchUuid = null): void
+    {
+        $this->activeBatchUuid = $batchUuid;
+        $this->showDbGrid      = true;
+    }
+
+    /**
+     * Close the DB review grid and return to the upload form.
+     */
+    public function closeReviewGrid(): void
+    {
+        $this->showDbGrid      = false;
+        $this->activeBatchUuid = null;
     }
 
     // ── Path resolution (unchanged) ───────────────────────────────────────────
