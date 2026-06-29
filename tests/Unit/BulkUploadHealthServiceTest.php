@@ -183,13 +183,8 @@ class BulkUploadHealthServiceTest extends TestCase
     {
         Storage::fake('public');
 
-        $batch = UploadBatch::create([
-            'status'      => UploadBatchStatus::EXTRACTING,
-            'total_pages' => 1,
-        ]);
-
         $preview = BulkUploadPreview::create([
-            'batch_uuid'        => $batch->id,
+            'batch_uuid'        => str_replace('-', '', fake()->uuid()),
             'status'            => 1,
             'source'            => 'pdf',
             'ai_extracted_data' => [],
@@ -199,8 +194,6 @@ class BulkUploadHealthServiceTest extends TestCase
             'is_placeholder'    => false,
             'occurrences_count' => 1,
         ]);
-
-        $batch->delete();
 
         $result = $this->service->check();
 

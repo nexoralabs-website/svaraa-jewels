@@ -28,6 +28,6 @@ class TempBulkUploadPageInspectTest extends TestCase
             $response->getContent(),
         );
 
-        $response->assertSee('livewire.min.js', false);
+        $response->assertSee('livewire.js', false);
     }
 }

@@ -16,6 +16,7 @@ class Product extends Model
     protected $fillable = [
         'category_id', 'name', 'slug', 'price', 'description',
         'thumbnail', 'status', 'stock', 'meta_title', 'meta_description', 'og_image',
+        'bulk_upload_preview_id', 'published_by', 'published_batch_uuid',
     ];
 
     // Eager-load approved review count + average when using withAvgAndCount()
