@@ -4,6 +4,7 @@ namespace Tests\Unit;
 
 use App\Enums\UploadBatchStatus;
 use App\Models\UploadBatch;
+use App\Models\BulkUploadPreview;
 use App\Services\BulkUploadHealthService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
