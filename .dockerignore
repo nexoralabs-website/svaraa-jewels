@@ -3,3 +3,4 @@
 .env
 /storage/logs
 .git
+public/storage

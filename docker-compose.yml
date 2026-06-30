@@ -12,6 +12,37 @@ services:
       - ./:/var/www/html
     depends_on:
       - mysql
+      - redis
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/up"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    environment:
+      APP_ENV: production
+      APP_DEBUG: false
+      APP_URL: http://localhost:8081
+      SESSION_SECURE_COOKIE: false
+      DB_CONNECTION: mysql
+      DB_HOST: svaraa_mysql
+      DB_PORT: 3306
+      DB_DATABASE: svaraa_jewels
+      DB_USERNAME: laravel
+      DB_PASSWORD: secret
+      CACHE_STORE: redis
+      CACHE_PREFIX: svaraa_
+      SESSION_DRIVER: redis
+      SESSION_LIFETIME: 180
+      SESSION_ENCRYPT: true
+      SESSION_PATH: /
+      QUEUE_CONNECTION: redis
+      REDIS_CLIENT: phpredis
+      REDIS_HOST: redis
+      REDIS_PASSWORD: null
+      REDIS_PORT: 6379
+      REDIS_QUEUE: svaraa_queue
     networks:
       - appnet
 
@@ -26,8 +57,35 @@ services:
       MYSQL_PASSWORD: secret
     ports:
       - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - appnet
+
+  redis:
+    image: redis:7-alpine
+    container_name: svaraa_redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - appnet
+
+volumes:
+  mysql_data:
+  redis_data:
 
 networks:
   appnet:
