@@ -28,7 +28,7 @@ class ProductService
             ->with([
                 'category:id,name,slug'
             ])
-            ->where('status', 'active')
+            ->where('status', true)
             ->whereHas('category', fn (Builder $q) => $q->where('slug', 'earrings'));
 
         if (! empty($filters['category'])) {
@@ -74,7 +74,7 @@ class ProductService
                 ->withCount(['approvedReviews as approved_reviews_count'])
                 ->withAvg(['approvedReviews as approved_reviews_avg_rating'], 'rating')
                 ->where('slug', $slug)
-                ->where('status', 'active')
+                ->where('status', true)
                 ->firstOrFail();
         });
     }
@@ -82,7 +82,7 @@ class ProductService
     public function getActiveCategories(): Collection
     {
         return Cache::remember('active_categories', 3600, function () {
-            return Category::where('status', 'active')->where('slug', 'earrings')->orderBy('name')->get();
+            return Category::where('status', true)->where('slug', 'earrings')->orderBy('name')->get();
         });
     }
 
@@ -92,7 +92,7 @@ class ProductService
             return Product::with(['category:id,name,slug', 'images' => fn ($q) => $q->where('is_primary', true)])
                 ->withCount(['approvedReviews as approved_reviews_count'])
                 ->withAvg(['approvedReviews as approved_reviews_avg_rating'], 'rating')
-                ->where('status', 'active')
+                ->where('status', true)
                 ->whereHas('category', fn (Builder $q) => $q->where('slug', 'earrings'))
                 ->inRandomOrder()
                 ->take($limit)
@@ -104,7 +104,7 @@ class ProductService
     {
         return Cache::remember("related_{$product->id}_{$limit}", 1800, function () use ($product, $limit) {
             return Product::with(['category:id,name,slug', 'images' => fn ($q) => $q->where('is_primary', true)])
-                ->where('status', 'active')
+                ->where('status', true)
                 ->where('category_id', $product->category_id)
                 ->where('id', '!=', $product->id)
                 ->inRandomOrder()

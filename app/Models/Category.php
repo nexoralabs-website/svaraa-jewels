@@ -9,6 +9,13 @@ class Category extends Model
 {
     protected $fillable = ['name', 'slug', 'image', 'status', 'meta_title', 'meta_description'];
 
+    protected function casts(): array
+    {
+        return [
+            'status' => 'boolean',
+        ];
+    }
+
     public function products(): HasMany
     {
         return $this->hasMany(Product::class);

@@ -15,7 +15,7 @@ class RecommendationService
         return cache()->remember(
             "related_{$product->id}_{$limit}",
             1800,
-            fn () => Product::where('status', 'active')
+            fn () => Product::where('status', true)
                 ->where('category_id', $product->category_id)
                 ->where('id', '!=', $product->id)
                 ->inRandomOrder()
@@ -31,7 +31,7 @@ class RecommendationService
         return cache()->remember(
             "fbt_{$product->id}_{$limit}",
             3600,
-            fn () => Product::where('status', 'active')
+            fn () => Product::where('status', true)
                 ->whereHas('orderItems', fn ($q) => $q->whereIn('order_id', $orderIds))
                 ->where('id', '!=', $product->id)
                 ->inRandomOrder()
@@ -54,7 +54,7 @@ class RecommendationService
         return cache()->remember(
             "personalized_{$user->id}_{$limit}",
             900,
-            fn () => Product::where('status', 'active')
+            fn () => Product::where('status', true)
                 ->whereIn('category_id', $purchasedCategoryIds)
                 ->inRandomOrder()
                 ->take($limit)
@@ -71,7 +71,7 @@ class RecommendationService
         $viewedIds = cache()->get("recently_viewed_{$user->id}", []);
 
         return Product::whereIn('id', $viewedIds)
-            ->where('status', 'active')
+            ->where('status', true)
             ->take($limit)
             ->get();
     }

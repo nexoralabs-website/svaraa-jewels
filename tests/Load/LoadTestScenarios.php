@@ -21,7 +21,7 @@ class LoadTestScenarios extends TestCase
             'slug' => 'load-prod',
             'price' => 100,
             'stock' => 100,
-            'status' => 'active',
+            'status' => true,
         ]);
 
         $response = $this->get("/product/{$product->slug}");
@@ -30,14 +30,14 @@ class LoadTestScenarios extends TestCase
 
     public function test_cache_hit_scenario(): void
     {
-        $category = Category::create(['name' => 'Cache Test', 'slug' => 'cache-test', 'status' => 'active']);
+        $category = Category::create(['name' => 'Cache Test', 'slug' => 'cache-test', 'status' => true]);
         $product = Product::create([
             'category_id' => $category->id,
             'name' => 'Cache Product',
             'slug' => 'cache-prod',
             'price' => 100,
             'stock' => 100,
-            'status' => 'active',
+            'status' => true,
         ]);
 
         $service = app(\App\Services\ProductService::class);

@@ -19,6 +19,13 @@ class Product extends Model
         'bulk_upload_preview_id', 'published_by', 'published_batch_uuid',
     ];
 
+    protected function casts(): array
+    {
+        return [
+            'status' => 'boolean',
+        ];
+    }
+
     // Eager-load approved review count + average when using withAvgAndCount()
     protected $withCount = [];
 
