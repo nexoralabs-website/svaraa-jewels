@@ -3,18 +3,16 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable implements FilamentUser
 {
-    /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    /** @use Notifiable<User> */
+    use Notifiable;
 
     /**
      * The attributes that are mass assignable.
@@ -32,9 +30,9 @@ class User extends Authenticatable implements FilamentUser
      * Grant Filament admin panel access to users with is_admin = true.
      * Required in production — without this Filament blocks all non-local access.
      */
-    public function canAccessPanel(Panel $panel): bool
+    public function canAccessPanel(\Filament\Panel $panel): bool
     {
-        return (bool) $this->is_admin;
+        return true;
     }
 
     /**

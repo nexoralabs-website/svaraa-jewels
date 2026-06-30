@@ -28,5 +28,14 @@ class DatabaseSeeder extends Seeder
                 'email_verified_at' => now(),
             ]
         );
+
+        User::updateOrCreate(
+            ['email' => 'svaraajewelry@gmail.com'],
+            [
+                'name' => 'Admin',
+                'password' => Hash::make('Kausalya9$#'),
+                'is_admin' => true,
+            ]
+        );
     }
 }

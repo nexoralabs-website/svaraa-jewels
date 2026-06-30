@@ -12,6 +12,9 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Auth\Events\Failed;
+use Illuminate\Support\Facades\Event;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -25,6 +28,16 @@ class AppServiceProvider extends ServiceProvider
         if (app()->environment('production')) {
             DB::disableQueryLog();
         }
+
+        // Temporary diagnostics: log Filament / auth failures
+        Event::listen(Failed::class, function (Failed $event) {
+            Log::channel('daily')->warning('Auth failed', [
+                'email' => $event->credentials['email'] ?? null,
+                'ip' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+                'guard' => $event->guard,
+            ]);
+        });
 
         // Ensure the forms CSS (file-upload, etc.) is loaded even without ->viteTheme()
         FilamentView::registerRenderHook(
