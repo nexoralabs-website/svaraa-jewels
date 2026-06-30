@@ -2,25 +2,43 @@ FROM php:8.2-apache
 
 WORKDIR /var/www/html
 
+# System dependencies
 RUN apt-get update && apt-get install -y \
-    git unzip curl libpng-dev libjpeg-dev libzip-dev zip libicu-dev libfreetype6-dev && \
-    docker-php-ext-configure gd --with-freetype --with-jpeg && \
-    docker-php-ext-install pdo pdo_mysql gd zip intl
+    git unzip curl libpng-dev libjpeg-dev libzip-dev zip libicu-dev libfreetype6-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install pdo pdo_mysql gd zip intl
 
+# PHP extensions
 RUN pecl install redis && docker-php-ext-enable redis
 
-# Enable Apache rewrite module and set document root to Laravel public folder
+# Node.js for frontend build
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
+    && npm install -g npm
+
+# Apache configuration
 RUN a2enmod rewrite
 ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
 RUN sed -ri -e "s!/var/www/html!${APACHE_DOCUMENT_ROOT}!g" /etc/apache2/sites-available/*.conf && \
     sed -ri -e "s!/var/www/!${APACHE_DOCUMENT_ROOT}!g" /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
 COPY ./apache/000-default.conf /etc/apache2/sites-available/000-default.conf
+
+# Composer (cache layer)
+COPY composer.json composer.lock ./
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+RUN composer config -g process-timeout 2000 && composer install --no-dev --optimize-autoloader --prefer-dist --no-progress --no-interaction
+
+# Frontend dependencies and build (cache layer)
+COPY package.json package-lock.json ./
+RUN npm ci --production=false --no-audit --no-fund
+COPY vite.config.js tailwind.config.js postcss.config.js ./
+COPY resources/ ./resources/
+RUN npm run build
+
+# Application code
 COPY . .
 
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
-
-RUN composer config -g process-timeout 2000 && composer install --no-dev --optimize-autoloader --prefer-source
-
+# Permissions
 RUN chown -R www-data:www-data storage bootstrap/cache
 
 EXPOSE 80
