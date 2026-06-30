@@ -23,3 +23,9 @@ Homestead.json
 Homestead.yaml
 Thumbs.db
 /bulk-upload-page.html
+
+/bootstrap/cache/*.php
+!bootstrap/cache/.gitignore
+
+/storage/framework/views/*
+!storage/framework/views/.gitignore
