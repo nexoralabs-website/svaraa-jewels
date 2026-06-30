@@ -44,6 +44,10 @@ RUN npm run build
 # Permissions
 RUN chown -R www-data:www-data storage bootstrap/cache
 
+# Pre-flight cache clear (idempotent, swallow errors on first deploy)
+RUN php artisan config:clear || true
+RUN php artisan cache:clear || true
+
 EXPOSE 80
 
-CMD ["apache2-foreground"]
+CMD sh -c "php artisan migrate --force && php artisan db:seed --force && apache2-foreground"

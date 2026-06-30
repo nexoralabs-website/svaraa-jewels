@@ -13,27 +13,7 @@ services:
       - key: APP_KEY
         value: ${APP_KEY}
       - key: DB_CONNECTION
-        value: mysql
-      - key: DB_HOST
-        fromDatabase:
-          name: svaraa_mysql
-          property: host
-      - key: DB_PORT
-        fromDatabase:
-          name: svaraa_mysql
-          property: port
-      - key: DB_DATABASE
-        fromDatabase:
-          name: svaraa_mysql
-          property: database
-      - key: DB_USERNAME
-        fromDatabase:
-          name: svaraa_mysql
-          property: user
-      - key: DB_PASSWORD
-        fromDatabase:
-          name: svaraa_mysql
-          property: password
+        value: pgsql
       - key: CACHE_STORE
         value: file
       - key: SESSION_DRIVER
@@ -42,9 +22,3 @@ services:
         value: sync
       - key: SCOUT_DRIVER
         value: database
-
-databases:
-  - name: svaraa_mysql
-    plan: starter
-    databaseName: svaraa_jewels
-    user: laravel
