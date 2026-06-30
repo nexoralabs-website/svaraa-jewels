@@ -11,14 +11,23 @@ use Illuminate\Support\Facades\Cache;
 
 class ProductService
 {
-    public function getFilteredProducts(array $filters = [], int $perPage = 12): LengthAwarePaginator
+    public function getFilteredProducts(array $filters = []): LengthAwarePaginator
     {
-        $query = Product::with([
-                'category:id,name,slug',
-                'images' => fn ($q) => $q->where('is_primary', true)->select('product_id', 'image'),
+        $perPage = min((int) ($filters['per_page'] ?? 12), 12);
+
+        $query = Product::query()
+            ->select([
+                'id',
+                'name',
+                'slug',
+                'price',
+                'status',
+                'category_id',
+                'created_at'
             ])
-            ->withCount(['approvedReviews as approved_reviews_count'])
-            ->withAvg(['approvedReviews as approved_reviews_avg_rating'], 'rating')
+            ->with([
+                'category:id,name,slug'
+            ])
             ->where('status', 'active')
             ->whereHas('category', fn (Builder $q) => $q->where('slug', 'earrings'));
 

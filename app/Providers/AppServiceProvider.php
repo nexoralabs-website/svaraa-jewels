@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 
 class AppServiceProvider extends ServiceProvider
@@ -21,6 +22,10 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(CartService $cartService): void
     {
+        if (app()->environment('production')) {
+            DB::disableQueryLog();
+        }
+
         // Ensure the forms CSS (file-upload, etc.) is loaded even without ->viteTheme()
         FilamentView::registerRenderHook(
             PanelsRenderHook::STYLES_AFTER,

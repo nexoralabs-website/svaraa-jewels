@@ -46,7 +46,6 @@ RUN chown -R www-data:www-data storage bootstrap/cache
 
 # Pre-flight cache clear (idempotent, swallow errors on first deploy)
 RUN php artisan config:clear || true
-RUN php artisan cache:clear || true
 
 EXPOSE 80
 
