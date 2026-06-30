@@ -4,9 +4,16 @@ WORKDIR /var/www/html
 
 # System dependencies
 RUN apt-get update && apt-get install -y \
-    git unzip curl libpng-dev libjpeg-dev libzip-dev zip libicu-dev libfreetype6-dev \
+    git unzip curl libpng-dev libjpeg-dev libzip-dev zip libicu-dev libfreetype6-dev libpq-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install pdo pdo_mysql gd zip intl
+    && docker-php-ext-install \
+        pdo \
+        pdo_mysql \
+        pdo_pgsql \
+        pgsql \
+        gd \
+        zip \
+        intl
 
 # PHP extensions
 RUN pecl install redis && docker-php-ext-enable redis
