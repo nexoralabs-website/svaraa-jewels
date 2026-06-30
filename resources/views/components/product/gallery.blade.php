@@ -1,18 +1,15 @@
 @props(['product'])
 
 @php
-    // Build image list starting with the normalized thumbnail URL from accessor
     $images = collect([]);
     $images->push($product->thumbnail_url);
-    // Append any additional images from the relation, safely converting to storage URLs
     if ($product->images && $product->images->count()) {
         foreach ($product->images as $img) {
             if (!empty($img->image)) {
-                $images->push(asset('storage/' . $img->image));
+                $images->push(Storage::url($img->image));
             }
         }
     }
-    // Ensure we always have at least one image
     if ($images->isEmpty()) {
         $images->push(asset('images/placeholder.svg'));
     }

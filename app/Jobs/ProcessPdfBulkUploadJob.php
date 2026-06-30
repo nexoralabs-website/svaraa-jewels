@@ -8,9 +8,11 @@ use App\Models\BulkUploadJobLog;
 use App\Models\UploadBatch;
 use App\Models\UploadBatchStep;
 use App\Services\BulkUploadService;
+use App\Services\PdfProductImportService;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Facades\Storage;
 use Throwable;
 
 class ProcessPdfBulkUploadJob implements ShouldQueue, ShouldBeUnique
@@ -65,7 +67,7 @@ class ProcessPdfBulkUploadJob implements ShouldQueue, ShouldBeUnique
 
     // ── Handle ────────────────────────────────────────────────────────────
 
-    public function handle(BulkUploadService $service): void
+    public function handle(BulkUploadService $service, PdfProductImportService $pdfService): void
     {
         $startedAt = now();
         $memBefore = memory_get_usage(true);
@@ -102,35 +104,71 @@ class ProcessPdfBulkUploadJob implements ShouldQueue, ShouldBeUnique
 
         $step->markRunning()->save();
 
-        // ── 4. Simulate extraction — create one preview per page ──────────
+        // ── 4. Real PDF extraction — create one preview per page with actual images ──
         try {
-            $pageCount = $this->endPage - $this->startPage + 1;
+            $absPath = Storage::disk('public')->path($this->filePath);
 
-            for ($page = $this->startPage; $page <= $this->endPage; $page++) {
+            if (! file_exists($absPath)) {
+                throw new \RuntimeException("PDF file not found at absolute path: {$absPath}");
+            }
+
+            $candidates = $pdfService->extractCandidates($absPath, $this->filePath);
+
+            logger()->info('pdf_extraction_complete', [
+                'pdf' => $this->filePath,
+                'pages_scanned' => $pdfService->pagesScanned,
+                'extracted' => $pdfService->extractedCount,
+                'duplicates' => $pdfService->duplicateCount,
+                'placeholders' => $pdfService->placeholderCount,
+                'failed' => $pdfService->failedCount,
+            ]);
+
+            $pageCount = $this->endPage - $this->startPage + 1;
+            $previewCount = 0;
+
+            foreach ($candidates as $candidate) {
+                $pageNumber = $candidate['pdf_page'];
+
+                if ($pageNumber < $this->startPage || $pageNumber > $this->endPage) {
+                    continue;
+                }
+
                 // Idempotency: skip if a preview for this exact page already exists
                 $alreadyExists = $batch->previews()
                     ->where('source_pdf', $this->filePath)
-                    ->where('pdf_page', $page)
+                    ->where('pdf_page', $pageNumber)
                     ->exists();
 
                 if ($alreadyExists) {
                     continue;
                 }
 
-                $service->createPreview($batch, [
+                $preview = $service->createPreview($batch, [
                     'source'             => 'pdf',
                     'source_pdf'         => $this->filePath,
-                    'pdf_page'           => $page,
-                    // Simulated extraction — real OCR values will be filled by
-                    // GeneratePreviewMetadataJob in the next chain step
-                    'name'               => "Product (page {$page})",
-                    'preview_image_path' => "extracts/{$this->batchUuid}/page-{$page}.jpg",
+                    'pdf_page'           => $pageNumber,
+                    'name'               => $candidate['name'],
+                    'preview_image_path' => $candidate['stored_path'],
                     'processing_metadata' => [
                         'extraction_source' => 'pdf',
-                        'page'              => $page,
+                        'page'              => $pageNumber,
                         'file'              => $this->filePath,
+                        'sha256'            => $candidate['sha256'],
+                        'from_embedded'     => $candidate['from_embedded'],
+                        'pages_found'       => $candidate['pages_found'] ?? [$pageNumber],
                     ],
                 ]);
+
+                logger()->info('pdf_preview_created', [
+                    'preview_id'     => $preview->id,
+                    'image_path'     => $candidate['stored_path'],
+                    'storage_url'    => Storage::url($candidate['stored_path']),
+                    'file_exists'    => Storage::disk('public')->exists($candidate['stored_path']),
+                    'page'           => $pageNumber,
+                    'pdf'            => $this->filePath,
+                ]);
+
+                $previewCount++;
             }
 
             // ── 5. Update processed_pages counter atomically ──────────────

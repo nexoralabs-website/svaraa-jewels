@@ -55,7 +55,7 @@ class BulkUploadPipelineTest extends TestCase
             'name'                => 'Gold Ring',
             'category_id'        => $cat->id,
             'price'               => 4999.00,
-            'preview_image_path'  => 'extracts/test/page-1.jpg',
+            'preview_image_path'  => 'products/test/page-1.jpg',
             'ai_extracted_data'   => ['name' => 'Gold Ring'],
             'content_hash'        => hash('sha256', 'gold-ring'),
         ]);

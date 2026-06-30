@@ -122,7 +122,7 @@ class BulkUploadTest extends TestCase
         foreach ($candidates as $c) {
             $this->assertSame(1, $c['pdf_page']);
             $this->assertSame('pdf', $c['source']);
-            $this->assertStringStartsWith('pdf-extracted/', $c['stored_path']);
+            $this->assertStringStartsWith('products/', $c['stored_path']);
             $this->assertArrayHasKey('pages_found', $c);
             $this->assertContains(1, $c['pages_found']);
         }

@@ -240,9 +240,19 @@ class PdfProductImportService
                     // basename so spaces never appear in the stored path / URL.
                     $safeName = $this->sanitiseFilename($pdfBaseName);
                     $suffix   = $uniqueOnPage > 0 ? "-img{$uniqueOnPage}" : '';
-                    $filename = "pdf-extracted/{$safeName}-p{$pageNumber}{$suffix}.{$ext}";
+                    $filename = "products/{$safeName}-p{$pageNumber}{$suffix}.{$ext}";
                     $optimizedBytes = $this->resizeImage($bytes, $ext);
                     Storage::disk('public')->put($filename, $optimizedBytes);
+
+                    $imagePath = $filename;
+                    logger()->info('pdf_image_saved', [
+                        'path'       => $imagePath,
+                        'url'        => Storage::url($imagePath),
+                        'exists'     => Storage::disk('public')->exists($imagePath),
+                        'size_bytes' => strlen($optimizedBytes),
+                        'page'       => $pageNumber,
+                        'pdf'        => $pdfBaseName,
+                    ]);
 
                     $this->seenSha[$sha]     = count($candidates);
                     $this->seenPHashes[$sha] = $pHash;
@@ -271,6 +281,15 @@ class PdfProductImportService
                 $this->placeholderCount++;
             }
         }
+
+        logger()->info('pdf_extraction_complete', [
+            'pdf' => $pdfBaseName,
+            'pages_scanned' => $this->pagesScanned,
+            'extracted' => $this->extractedCount,
+            'duplicates' => $this->duplicateCount,
+            'placeholders' => $this->placeholderCount,
+            'failed' => $this->failedCount,
+        ]);
 
         return $candidates;
     }
@@ -726,7 +745,7 @@ class PdfProductImportService
         $jpeg = (string) ob_get_clean();
         imagedestroy($im);
 
-        $path = "pdf-extracted/{$baseName}-p{$pageNumber}-placeholder.jpg";
+        $path = "products/{$baseName}-p{$pageNumber}-placeholder.jpg";
         Storage::disk('public')->put($path, $jpeg);
 
         return $path;

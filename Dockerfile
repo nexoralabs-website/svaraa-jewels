@@ -33,6 +33,10 @@ COPY ./apache/000-default.conf /etc/apache2/sites-available/000-default.conf
 # Copy full application before composer so artisan exists
 COPY . .
 
+# Storage symlink must exist after COPY (idempotent; production symlink is created in build)
+RUN rm -rf public/storage
+RUN php artisan storage:link || true
+
 # Composer
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 RUN composer config -g process-timeout 2000 && composer install --no-dev --optimize-autoloader --prefer-dist --no-progress --no-interaction
@@ -49,4 +53,15 @@ RUN php artisan config:clear || true
 
 EXPOSE 80
 
-CMD sh -c "php artisan migrate --force && php artisan db:seed --force && php artisan optimize:clear && php artisan config:clear && php artisan route:clear && php artisan view:clear && apache2-foreground"
+CMD sh -c "\
+echo '===== STORAGE DEBUG =====' && \
+pwd && \
+ls -la public && \
+echo '--- PUBLIC STORAGE ---' && \
+ls -la public/storage || true && \
+echo '--- PRODUCTS ---' && \
+ls -la storage/app/public/products || true && \
+echo '===== LARAVEL START =====' && \
+php artisan migrate --force && \
+php artisan db:seed --force && \
+apache2-foreground"

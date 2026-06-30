@@ -160,7 +160,7 @@ class GeneratePreviewMetadataJobTest extends TestCase
             'name'               => 'Gold Ring',
             'category_id'        => $cat->id,
             'price'              => 4999.00,
-            'preview_image_path' => 'extracts/test/p1.jpg',
+            'preview_image_path' => 'products/test/p1.jpg',
             'ai_extracted_data'  => ['name' => 'Gold Ring'],
         ]);
 

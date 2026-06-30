@@ -7,6 +7,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Storage;
 
 class CartController extends Controller
 {
@@ -134,9 +135,9 @@ class CartController extends Controller
         return $items->map(function ($item) {
             $imageUrl = null;
             if ($item->product->thumbnail) {
-                $imageUrl = asset('storage/' . $item->product->thumbnail);
+                $imageUrl = Storage::url($item->product->thumbnail);
             } elseif ($item->product->images->isNotEmpty()) {
-                $imageUrl = asset('storage/' . $item->product->images->first()->image);
+                $imageUrl = Storage::url($item->product->images->first()->image);
             } else {
                 $imageUrl = asset('images/placeholder.jpg');
             }

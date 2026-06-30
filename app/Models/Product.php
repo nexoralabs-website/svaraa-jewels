@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Scout\Searchable;
 
@@ -88,23 +89,29 @@ class Product extends Model
 
     public function getThumbnailUrlAttribute(): string
     {
-        // Normalize stored path
         $path = $this->thumbnail;
-        // Remove possible storage prefixes and leading slashes
         $path = ltrim($path, '/');
         $path = preg_replace('#^storage/#', '', $path);
-        // If thumbnail path exists in public disk, use it
+
         if ($path && Storage::disk('public')->exists($path)) {
-            return asset('storage/' . $path);
+            Log::channel('daily')->debug('Thumbnail URL resolved', [
+                'path' => $path,
+                'exists' => Storage::disk('public')->exists($path),
+                'url' => Storage::url($path),
+                'storage_link_exists' => file_exists(public_path('storage')),
+            ]);
+            return Storage::url($path);
         }
 
-        // Fallback: first related image
         $first = $this->images()->orderBy('id')->first();
         if ($first && $first->image && Storage::disk('public')->exists($first->image)) {
-            return asset('storage/' . $first->image);
+            Log::channel('daily')->debug('Fallback image URL resolved', [
+                'path' => $first->image,
+                'url' => Storage::url($first->image),
+            ]);
+            return Storage::url($first->image);
         }
 
-        // Final placeholder image
         return asset('images/placeholder.svg');
     }
 

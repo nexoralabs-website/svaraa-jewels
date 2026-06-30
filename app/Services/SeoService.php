@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 
 class SeoService
 {
@@ -20,8 +22,16 @@ class SeoService
                 : ($product->description ?? $title));
 
         $image = $product->og_image
-            ? asset('storage/' . $product->og_image)
-            : ($product->thumbnail ? asset('storage/' . $product->thumbnail) : asset('images/og-default.jpg'));
+            ? Storage::url($product->og_image)
+            : ($product->thumbnail ? Storage::url($product->thumbnail) : asset('images/og-default.jpg'));
+
+        if ($product->og_image || $product->thumbnail) {
+            Log::channel('daily')->debug('SeoService product image URL', [
+                'og_image' => $product->og_image,
+                'thumbnail' => $product->thumbnail,
+                'final_url' => $image,
+            ]);
+        }
 
         $url = route('products.show', $product->slug);
 

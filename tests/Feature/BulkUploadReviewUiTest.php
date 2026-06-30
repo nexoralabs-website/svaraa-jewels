@@ -52,7 +52,7 @@ class BulkUploadReviewUiTest extends TestCase
             'name'              => 'Test Product ' . uniqid(),
             'category_id'       => $cat->id,
             'price'             => 1999.00,
-            'preview_image_path'=> 'extracts/test/page-1.jpg',
+            'preview_image_path'=> 'products/test/page-1.jpg',
             'ai_extracted_data' => ['name' => 'AI Product'],
             'content_hash'      => hash('sha256', uniqid()),
         ], $overrides));

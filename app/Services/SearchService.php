@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Product;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Storage;
 
 class SearchService
 {
@@ -72,10 +73,10 @@ class SearchService
                 'id'       => $p->id,
                 'name'     => $p->name,
                 'slug'     => $p->slug,
-                'price'    => '\u20b9' . number_format($p->price, 2),  // ₹ via unicode
+                'price'    => '\u20b9' . number_format($p->price, 2),
                 'category' => $p->category?->name ?? '',
                 'image'    => $p->thumbnail
-                    ? asset('storage/' . $p->thumbnail)
+                    ? Storage::url($p->thumbnail)
                     : asset('images/placeholder.jpg'),
                 'url'      => route('products.show', $p->slug),
             ]);

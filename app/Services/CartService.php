@@ -8,6 +8,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Collection as BaseCollection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Storage;
 
 class CartService
 {
@@ -56,9 +57,9 @@ class CartService
         return $this->getCartItems()->map(function ($item) {
             $imageUrl = asset('images/placeholder.jpg');
             if (!empty($item->product->thumbnail)) {
-                $imageUrl = asset('storage/' . $item->product->thumbnail);
+                $imageUrl = Storage::url($item->product->thumbnail);
             } elseif (!empty($item->product->images) && $item->product->images->count() > 0) {
-                $imageUrl = asset('storage/' . $item->product->images->first()->image);
+                $imageUrl = Storage::url($item->product->images->first()->image);
             }
 
             return [

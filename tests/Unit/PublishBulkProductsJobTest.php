@@ -62,7 +62,7 @@ class PublishBulkProductsJobTest extends TestCase
             'name'               => 'Gold Ring ' . uniqid(),
             'category_id'        => $cat->id,
             'price'              => 4999.00,
-            'preview_image_path' => 'extracts/' . $batch->id . '/page-1.jpg',
+            'preview_image_path' => 'products/' . $batch->id . '/page-1.jpg',
             'ai_extracted_data'  => ['name' => 'Gold Ring'],
             'content_hash'       => hash('sha256', uniqid()),
         ]);

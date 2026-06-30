@@ -157,12 +157,12 @@
 
                     {{-- Preview image --}}
                     <td class="px-3 py-2">
-                        @if($preview->preview_image_path)
-                            <img src="{{ asset('storage/' . $preview->preview_image_path) }}"
-                                 alt="{{ $preview->name }}"
-                                 class="w-14 h-14 object-cover rounded-lg border border-gray-200 dark:border-gray-600"
-                                 onerror="this.src='{{ asset('images/placeholder.svg') }}'">
-                        @else
+@if($preview->preview_image_path)
+                             <img src="{{ Storage::url($preview->preview_image_path) }}"
+                                  alt="{{ $preview->name }}"
+                                  class="w-14 h-14 object-cover rounded-lg border border-gray-200 dark:border-gray-600"
+                                  onerror="this.src='{{ asset('images/placeholder.svg') }}'">
+                         @else
                             <div class="w-14 h-14 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-2xl text-gray-300">
                                 &#x1F5BC;
                             </div>

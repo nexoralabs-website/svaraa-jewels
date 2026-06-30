@@ -6,7 +6,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Storage;
 
 /**
- * Re-compress existing oversized thumbnails in storage/app/public/pdf-extracted.
+ * Re-compress existing oversized thumbnails in storage/app/public/products.
  *
  * Usage:
  *   php artisan thumbnails:recompress
@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\Storage;
 class RecompressThumbnails extends Command
 {
     protected $signature = 'thumbnails:recompress
-        {--dir=pdf-extracted : Subdirectory inside the public disk to scan}
+        {--dir=products : Subdirectory inside the public disk to scan}
         {--max-dim=1200      : Maximum pixel dimension (width or height)}
         {--quality=75        : JPEG/WebP output quality (1-100)}
         {--dry-run           : Show what would happen without writing anything}';

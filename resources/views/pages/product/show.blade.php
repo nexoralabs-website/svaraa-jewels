@@ -5,7 +5,7 @@
             :title="$product->seo_title"
             :description="$product->seo_description"
             :canonical="route('products.show', $product->slug)"
-            :og-image="$product->og_image ? asset('storage/' . $product->og_image) : null"
+            :og-image="$product->og_image ? Storage::url($product->og_image) : null"
             :schema="['@type' => 'Product', 'name' => $product->name, 'aggregateRating' => $product->review_count > 0 ? ['@type' => 'AggregateRating', 'ratingValue' => $product->average_rating, 'reviewCount' => $product->review_count] : null, 'offers' => ['@type' => 'Offer', 'price' => $product->price, 'priceCurrency' => 'INR', 'availability' => $product->stock > 0 ? 'InStock' : 'OutOfStock']]" />
     </x-slot:seo>
 

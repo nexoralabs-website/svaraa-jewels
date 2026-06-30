@@ -25,7 +25,7 @@
         quantity: 1,
         images: [
             @foreach($product->images as $img)
-                '{{ asset('storage/' . $img->image) }}',
+                '{{ Storage::url($img->image) }}',
             @endforeach
             @if($product->images->isEmpty())
                 '{{ asset('images/placeholder.jpg') }}'
