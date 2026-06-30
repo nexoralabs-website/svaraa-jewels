@@ -23,20 +23,16 @@ RUN sed -ri -e "s!/var/www/html!${APACHE_DOCUMENT_ROOT}!g" /etc/apache2/sites-av
     sed -ri -e "s!/var/www/!${APACHE_DOCUMENT_ROOT}!g" /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
 COPY ./apache/000-default.conf /etc/apache2/sites-available/000-default.conf
 
-# Composer (cache layer)
-COPY composer.json composer.lock ./
+# Copy full application before composer so artisan exists
+COPY . .
+
+# Composer
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 RUN composer config -g process-timeout 2000 && composer install --no-dev --optimize-autoloader --prefer-dist --no-progress --no-interaction
 
-# Frontend dependencies and build (cache layer)
-COPY package.json package-lock.json ./
+# Frontend build
 RUN npm ci --production=false --no-audit --no-fund
-COPY vite.config.js tailwind.config.js postcss.config.js ./
-COPY resources/ ./resources/
 RUN npm run build
-
-# Application code
-COPY . .
 
 # Permissions
 RUN chown -R www-data:www-data storage bootstrap/cache
