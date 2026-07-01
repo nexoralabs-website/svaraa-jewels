@@ -128,7 +128,7 @@ class PdfProductImportService
         }
 
         Log::info('PDF IMPORT START', [
-            'pdf'=>$pdfPath,
+            'pdf'=>$pdfStoredPath,
         ]);
 
         $pdfBaseName = pathinfo($pdfStoredPath, PATHINFO_FILENAME);
@@ -245,7 +245,7 @@ class PdfProductImportService
                     continue;
                 }
 
-                // ── Unique image — persist ────────────────────────────
+                // ── Unique image — persist ─────────────────────────────
                 // Use a dense sequential suffix to avoid filename collisions
                 // when the page has multiple unique images. Sanitise the PDF
                 // basename so spaces never appear in the stored path / URL.
@@ -256,11 +256,16 @@ class PdfProductImportService
                 $optimizedBytes = $this->resizeImage($bytes, $ext);
                 Storage::disk('public')->put($filename, $optimizedBytes);
 
+                // Verify file exists immediately after write
+                if (!Storage::disk('public')->exists($filename)) {
+                    throw new \RuntimeException("Image written but file missing: {$filename}");
+                }
+
                 Log::info('IMAGE SAVED', [
-                    'path'=>$filename,
+                    'stored_path'=>$filename,
                     'exists'=>Storage::disk('public')->exists($filename),
                     'absolute'=>Storage::disk('public')->path($filename),
-                    'url'=>Storage::disk('public')->url($filename),
+                    'url'=>Storage::url($filename),
                     'size'=>Storage::disk('public')->size($filename),
                 ]);
 
@@ -631,7 +636,7 @@ class PdfProductImportService
             );
 
             foreach ($lines as $line) {
-                if (preg_match('/^[\d\s\-\\\\\/\.,:@#\(\)]+$/', $line)) {
+                if (preg_match('/^[\d\s\-\\\/.:,@#$\(\)]+$/', $line)) {
                     continue;
                 }
                 if (preg_match('/\.(pdf|jpg|jpeg|png|ai|psd|svg)/i', $line)) {

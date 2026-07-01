@@ -15,6 +15,7 @@ use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SeoController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 
 Route::get('/', function () {
     return view('welcome');
@@ -35,6 +36,15 @@ Route::get('/category/{slug}', [CategoryController::class, 'show'])->name('categ
 Route::get('/about', function () {
     return view('pages.static.about');
 })->name('about');
+
+// Debug route - remove after debugging
+Route::get('/debug/storage', function () {
+    return [
+        'public_exists'=>Storage::disk('public')->exists('products'),
+        'files'=>Storage::disk('public')->allFiles('products'),
+        'url'=>Storage::url('products'),
+    ];
+})->middleware('auth');
 
 Route::get('/contact', function () {
     return view('pages.static.contact');
