@@ -12,6 +12,7 @@ use App\Services\PdfProductImportService;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Throwable;
 
@@ -116,8 +117,12 @@ class ProcessPdfBulkUploadJob implements ShouldQueue, ShouldBeUnique
 
             Log::info('EXTRACTION RESULT', [
                 'count'=>count($candidates),
-                'images'=>$candidates,
+                'paths'=>array_column($candidates, 'stored_path')
             ]);
+
+            if (empty($candidates)) {
+                throw new \RuntimeException('No images extracted from PDF');
+            }
 
             $pageCount = $this->endPage - $this->startPage + 1;
             $previewCount = 0;
@@ -138,6 +143,10 @@ class ProcessPdfBulkUploadJob implements ShouldQueue, ShouldBeUnique
                 if ($alreadyExists) {
                     continue;
                 }
+
+                Log::info('PREVIEW CREATE', [
+                    'path'=>$candidate['stored_path'] ?? null
+                ]);
 
                 $preview = $service->createPreview($batch, [
                     'source'             => 'pdf',

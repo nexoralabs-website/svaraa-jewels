@@ -137,6 +137,7 @@ class PdfProductImportService
 
         foreach ($pages as $pageIndex => $page) {
             $pageNumber = $pageIndex + 1;
+            Log::info('PDF PAGE START', ['page'=>$pageNumber]);
             $this->pagesScanned++;
 
             // ── Text extraction (best-effort; never fatal) ────────────────
@@ -151,8 +152,14 @@ class PdfProductImportService
             $pageImages = [];
             try {
                 $pageImages = $this->extractAllProductImages($page);
+                Log::info('IMAGE EXTRACTED', ['page'=>$pageNumber, 'count'=>count($pageImages)]);
             } catch (\Throwable) {
                 $this->failedCount++;
+            }
+
+            if (empty($pageImages)) {
+                $this->placeholderCount++;
+                continue;
             }
 
             logger()->info('pdf_extraction_page', [
@@ -162,36 +169,63 @@ class PdfProductImportService
                 'pdf'    => $pdfBaseName,
             ]);
 
-            if (! empty($pageImages)) {
-                // Sequential counter for unique-per-page suffix (0-based, dense)
-                $uniqueOnPage = 0;
+            // Sequential counter for unique-per-page suffix (0-based, dense)
+            $uniqueOnPage = 0;
 
-                foreach ($pageImages as $imgData) {
-                    ['bytes' => $bytes, 'ext' => $ext] = $imgData;
-                    $sha = hash('sha256', $bytes);
+            foreach ($pageImages as $imgData) {
+                ['bytes' => $bytes, 'ext' => $ext] = $imgData;
+                $sha = hash('sha256', $bytes);
 
-                    // ── Layer 1: exact SHA-256 duplicate ──────────────────
-                    if (isset($this->seenSha[$sha])) {
-                        $idx = $this->seenSha[$sha];
-                        if (! in_array($pageNumber, $candidates[$idx]['pages_found'], true)) {
-                            $candidates[$idx]['pages_found'][] = $pageNumber;
-                        }
-                        if (! in_array($pageNumber, $candidates[$idx]['duplicate_pages'], true)) {
-                            $candidates[$idx]['duplicate_pages'][] = $pageNumber;
-                        }
-                        $candidates[$idx]['occurrences_count']++;
-                        $this->duplicateCount++;
-                        continue;
+                // ── Layer 1: exact SHA-256 duplicate ──────────────────
+                if (isset($this->seenSha[$sha])) {
+                    $idx = $this->seenSha[$sha];
+                    if (! in_array($pageNumber, $candidates[$idx]['pages_found'], true)) {
+                        $candidates[$idx]['pages_found'][] = $pageNumber;
                     }
+                    if (! in_array($pageNumber, $candidates[$idx]['duplicate_pages'], true)) {
+                        $candidates[$idx]['duplicate_pages'][] = $pageNumber;
+                    }
+                    $candidates[$idx]['occurrences_count']++;
+                    $this->duplicateCount++;
+                    continue;
+                }
 
-                    // ── Layer 2: pHash near-duplicate (Hamming ≤ 3) ───────
-                    $pHash = $this->computePHash($bytes);
-                    $isDup = false;
-                    if ($pHash !== null) {
-                        foreach ($this->seenPHashes as $existingSha => $existingPHash) {
-                            if ($existingPHash !== null
-                                && $this->hammingDistance($pHash, $existingPHash) <= self::PHASH_HAMMING
-                            ) {
+                // ── Layer 2: pHash near-duplicate (Hamming ≤ 3) ───────
+                $pHash = $this->computePHash($bytes);
+                $isDup = false;
+                if ($pHash !== null) {
+                    foreach ($this->seenPHashes as $existingSha => $existingPHash) {
+                        if ($existingPHash !== null
+                            && $this->hammingDistance($pHash, $existingPHash) <= self::PHASH_HAMMING
+                        ) {
+                            $idx = $this->seenSha[$existingSha];
+                            if (! in_array($pageNumber, $candidates[$idx]['pages_found'], true)) {
+                                $candidates[$idx]['pages_found'][] = $pageNumber;
+                            }
+                            if (! in_array($pageNumber, $candidates[$idx]['duplicate_pages'], true)) {
+                                $candidates[$idx]['duplicate_pages'][] = $pageNumber;
+                            }
+                            $candidates[$idx]['occurrences_count']++;
+                            $this->duplicateCount++;
+                            $isDup = true;
+                            break;
+                        }
+                    }
+                }
+                if ($isDup) {
+                    continue;
+                }
+
+                // ── Layer 3: dominant-colour near-duplicate ────────────
+                $colors = $this->computeColorHistogram($bytes);
+                if ($colors !== null) {
+                    foreach ($this->seenColors as $existingSha => $existingColors) {
+                        if ($this->colorHistogramSimilar($colors, $existingColors)) {
+                            $existingPHash2 = $this->seenPHashes[$existingSha] ?? null;
+                            $pHashClose = ($existingPHash2 === null || $pHash === null)
+                                ? true
+                                : $this->hammingDistance($pHash, $existingPHash2) <= self::PHASH_HAMMING + 2;
+                            if ($pHashClose) {
                                 $idx = $this->seenSha[$existingSha];
                                 if (! in_array($pageNumber, $candidates[$idx]['pages_found'], true)) {
                                     $candidates[$idx]['pages_found'][] = $pageNumber;
@@ -206,83 +240,49 @@ class PdfProductImportService
                             }
                         }
                     }
-                    if ($isDup) {
-                        continue;
-                    }
-
-                    // ── Layer 3: dominant-colour near-duplicate ────────────
-                    $colors = $this->computeColorHistogram($bytes);
-                    if ($colors !== null) {
-                        foreach ($this->seenColors as $existingSha => $existingColors) {
-                            if ($this->colorHistogramSimilar($colors, $existingColors)) {
-                                $existingPHash2 = $this->seenPHashes[$existingSha] ?? null;
-                                $pHashClose = ($existingPHash2 === null || $pHash === null)
-                                    ? true
-                                    : $this->hammingDistance($pHash, $existingPHash2) <= self::PHASH_HAMMING + 2;
-                                if ($pHashClose) {
-                                    $idx = $this->seenSha[$existingSha];
-                                    if (! in_array($pageNumber, $candidates[$idx]['pages_found'], true)) {
-                                        $candidates[$idx]['pages_found'][] = $pageNumber;
-                                    }
-                                    if (! in_array($pageNumber, $candidates[$idx]['duplicate_pages'], true)) {
-                                        $candidates[$idx]['duplicate_pages'][] = $pageNumber;
-                                    }
-                                    $candidates[$idx]['occurrences_count']++;
-                                    $this->duplicateCount++;
-                                    $isDup = true;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    if ($isDup) {
-                        continue;
-                    }
-
-                    // ── Unique image — persist ────────────────────────────
-                    // Use a dense sequential suffix to avoid filename collisions
-                    // when the page has multiple unique images. Sanitise the PDF
-                    // basename so spaces never appear in the stored path / URL.
-                    $safeName = $this->sanitiseFilename($pdfBaseName);
-                    $suffix   = $uniqueOnPage > 0 ? "-img{$uniqueOnPage}" : '';
-                    $filename = "products/{$safeName}-p{$pageNumber}{$suffix}.{$ext}";
-                    Storage::disk('public')->makeDirectory('products');
-                    $optimizedBytes = $this->resizeImage($bytes, $ext);
-                    Storage::disk('public')->put($filename, $optimizedBytes);
-
-                    Log::info('IMAGE SAVED', [
-                        'path'=>$filename,
-                        'exists'=>Storage::disk('public')->exists($filename),
-                        'absolute'=>Storage::disk('public')->path($filename),
-                        'url'=>Storage::disk('public')->url($filename),
-                        'size'=>Storage::disk('public')->size($filename),
-                    ]);
-
-                    $this->seenSha[$sha]     = count($candidates);
-                    $this->seenPHashes[$sha] = $pHash;
-                    if ($colors !== null) {
-                        $this->seenColors[$sha] = $colors;
-                    }
-
-                    $name = $this->generateProductName($rawText, $pageNumber);
-                    $candidates[] = $this->buildCandidate(
-                        storedPath:    $filename,
-                        name:          $name,
-                        price:         $detectedPrice,
-                        pageNumber:    $pageNumber,
-                        fromEmbedded:  true,
-                        sha256:        $sha,
-                        pdfBaseName:   $safeName,
-                        isPlaceholder: false,
-                    );
-                    $this->extractedCount++;
-                    $uniqueOnPage++;
                 }
-            } else {
-                // ── No qualifying image on this page → skip row entirely.
-                // Placeholder rows are disabled: they pollute the review table
-                // with non-publishable rows that confuse admins.
-                $this->placeholderCount++;
+                if ($isDup) {
+                    continue;
+                }
+
+                // ── Unique image — persist ────────────────────────────
+                // Use a dense sequential suffix to avoid filename collisions
+                // when the page has multiple unique images. Sanitise the PDF
+                // basename so spaces never appear in the stored path / URL.
+                $safeName = $this->sanitiseFilename($pdfBaseName);
+                $suffix   = $uniqueOnPage > 0 ? "-img{$uniqueOnPage}" : '';
+                $filename = "products/{$safeName}-p{$pageNumber}{$suffix}.{$ext}";
+                Storage::disk('public')->makeDirectory('products');
+                $optimizedBytes = $this->resizeImage($bytes, $ext);
+                Storage::disk('public')->put($filename, $optimizedBytes);
+
+                Log::info('IMAGE SAVED', [
+                    'path'=>$filename,
+                    'exists'=>Storage::disk('public')->exists($filename),
+                    'absolute'=>Storage::disk('public')->path($filename),
+                    'url'=>Storage::disk('public')->url($filename),
+                    'size'=>Storage::disk('public')->size($filename),
+                ]);
+
+                $this->seenSha[$sha]     = count($candidates);
+                $this->seenPHashes[$sha] = $pHash;
+                if ($colors !== null) {
+                    $this->seenColors[$sha] = $colors;
+                }
+
+                $name = $this->generateProductName($rawText, $pageNumber);
+                $candidates[] = $this->buildCandidate(
+                    storedPath:    $filename,
+                    name:          $name,
+                    price:         $detectedPrice,
+                    pageNumber:    $pageNumber,
+                    fromEmbedded:  true,
+                    sha256:        $sha,
+                    pdfBaseName:   $safeName,
+                    isPlaceholder: false,
+                );
+                $this->extractedCount++;
+                $uniqueOnPage++;
             }
         }
 
@@ -631,7 +631,7 @@ class PdfProductImportService
             );
 
             foreach ($lines as $line) {
-                if (preg_match('/^[\d\s\-\/\\\\\.,:@#\(\)]+$/', $line)) {
+                if (preg_match('/^[\d\s\-\\\\\/\.,:@#\(\)]+$/', $line)) {
                     continue;
                 }
                 if (preg_match('/\.(pdf|jpg|jpeg|png|ai|psd|svg)/i', $line)) {
