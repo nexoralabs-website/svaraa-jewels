@@ -45,6 +45,21 @@
             Edited only
         </label>
 
+        {{-- Reprocess button (show when a completed/failed batch is selected) --}}
+        @if($filterBatch)
+            @php
+                $selectedBatch = collect($activeBatches)->firstWhere('id', $filterBatch);
+                $canReprocess = $selectedBatch && in_array($selectedBatch['status'] ?? null, [\App\Enums\UploadBatchStatus::COMPLETED->value, \App\Enums\UploadBatchStatus::FAILED->value]);
+            @endphp
+            @if($canReprocess)
+            <button wire:click="reprocessBatch('{{ $filterBatch }}')"
+                    wire:confirm="This will regenerate images and previews from the original PDF."
+                    class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-colors">
+                &#x21BA; Reprocess
+            </button>
+            @endif
+        @endif
+
         {{-- Status badges --}}
         <div class="ml-auto flex items-center gap-2 flex-wrap">
             @foreach([0=>'gray',1=>'yellow',2=>'blue',3=>'green',4=>'red'] as $val => $col)
@@ -385,6 +400,9 @@
     });
     $wire.on('row-saved', ({ id }) => {
         console.debug('[BulkUploadPreviewGrid] row saved:', id);
+    });
+    $wire.on('reprocess-complete', () => {
+        $wire.refresh;
     });
 </script>
 @endscript

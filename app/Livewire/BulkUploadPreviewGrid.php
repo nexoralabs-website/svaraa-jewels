@@ -8,6 +8,7 @@ use App\Jobs\PublishBulkProductsJob;
 use App\Models\BulkUploadPreview;
 use App\Models\Category;
 use App\Models\UploadBatch;
+use App\Services\BulkUploadRecoveryService;
 use App\Services\BulkUploadService;
 use App\Services\PreviewValidationService;
 use Filament\Notifications\Notification;
@@ -28,7 +29,7 @@ use Throwable;
  *  - Load from DB with pagination (25/page), eager-load category, avoid N+1.
  *  - Filter by batch, status, duplicates, edited.
  *  - Inline edit with optimistic locking via `version`.
- *  - Row actions: saveRow, duplicateRow, deleteRow, resetToAi, markReady.
+ *  - Row actions: saveRow, duplicateRow, deleteRow, resetToAi, markReady, reprocessBatch.
  *  - Bulk actions: publishSelected, saveDraftSelected, deleteSelected, autoFillPrices, regenerateDescriptions.
  *  - Never contains business logic — delegates to BulkUploadService / PreviewValidationService.
  */
@@ -145,14 +146,17 @@ class BulkUploadPreviewGrid extends Component
 
     private function activeBatches(): array
     {
-        return UploadBatch::whereNotIn('status', [
-            UploadBatchStatus::COMPLETED->value,
-            UploadBatchStatus::FAILED->value,
-        ])
-        ->latest()
-        ->limit(20)
-        ->get(['id', 'status', 'progress_message', 'total_pages', 'processed_pages'])
-        ->toArray();
+        return UploadBatch::latest()
+            ->limit(20)
+            ->get(['id', 'status', 'progress_message', 'total_pages', 'processed_pages'])
+            ->map(fn($b) => [
+                'id' => $b->id,
+                'status' => $b->status->value,
+                'progress_message' => $b->progress_message,
+                'total_pages' => $b->total_pages,
+                'processed_pages' => $b->processed_pages,
+            ])
+            ->toArray();
     }
 
     // ── Filter updaters ───────────────────────────────────────────────────
@@ -341,6 +345,50 @@ class BulkUploadPreviewGrid extends Component
             Notification::make()
                 ->title('Cannot mark as Ready')
                 ->body($e->getMessage())
+                ->danger()
+                ->send();
+        }
+    }
+
+    /**
+     * Reprocess the entire batch (completed or failed).
+     * Deletes old previews and files, then re-runs extraction.
+     */
+    public function reprocessBatch(string $batchUuid): void
+    {
+        $batch = UploadBatch::find($batchUuid);
+        if (! $batch) {
+            Notification::make()
+                ->title('Batch not found.')
+                ->danger()
+                ->send();
+            return;
+        }
+
+        // Only allow reprocess for completed or failed batches
+        if (!in_array($batch->status, [
+            UploadBatchStatus::COMPLETED,
+            UploadBatchStatus::FAILED,
+        ], true)) {
+            Notification::make()
+                ->title('Cannot reprocess batch.')
+                ->body('Only completed or failed batches can be reprocessed.')
+                ->warning()
+                ->send();
+            return;
+        }
+
+        $success = app(BulkUploadRecoveryService::class)->reprocessBatch($batchUuid);
+
+        if ($success) {
+            Notification::make()
+                ->title('Reprocess started.')
+                ->body('The batch is being re-processed. Refresh to see new previews.')
+                ->success()
+                ->send();
+        } else {
+            Notification::make()
+                ->title('Reprocess failed.')
                 ->danger()
                 ->send();
         }
