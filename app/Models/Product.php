@@ -125,7 +125,7 @@ class Product extends Model
             'image' => $first?->image,
         ]);
 
-        return asset('images/placeholders/product.webp');
+        return asset('images/placeholders/product.svg');
     }
 
     /**
