@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Smalot\PdfParser\Parser as PdfParser;
 
@@ -245,11 +246,10 @@ class PdfProductImportService
                     $optimizedBytes = $this->resizeImage($bytes, $ext);
                     Storage::disk('public')->put($filename, $optimizedBytes);
 
-                    $imagePath = $filename;
                     Log::info('IMAGE SAVED', [
-                        'path'=>$imagePath,
-                        'exists'=>Storage::disk('public')->exists($imagePath),
-                        'url'=>Storage::disk('public')->url($imagePath)
+                        'path'=>$filename,
+                        'exists'=>Storage::disk('public')->exists($filename),
+                        'url'=>Storage::disk('public')->url($filename),
                     ]);
 
                     $this->seenSha[$sha]     = count($candidates);
