@@ -89,38 +89,41 @@ class Product extends Model
 
     public function getThumbnailUrlAttribute(): string
     {
-        $path = $this->thumbnail;
+        $paths = [];
 
-        if ($path) {
-            $path = preg_replace('#^storage/#', '', $path);
-        }
-
-        Log::info('THUMBNAIL RESOLVE', [
-            'thumbnail' => $this->thumbnail,
-            'path' => $path,
-            'exists' => $path
-                ? Storage::disk('public')->exists($path)
-                : false,
-        ]);
-
-        if (
-            !empty($path) &&
-            Storage::disk('public')->exists($path)
-        ) {
-            return Storage::url($path);
+        if (!empty($this->thumbnail)) {
+            $paths[] = preg_replace('#^storage/#', '', $this->thumbnail);
         }
 
         $first = $this->images()
             ->orderBy('id')
             ->first();
 
-        if (
-            $first &&
-            !empty($first->image) &&
-            Storage::disk('public')->exists($first->image)
-        ) {
-            return Storage::url($first->image);
+        if ($first && !empty($first->image)) {
+            $paths[] = preg_replace('#^storage/#', '', $first->image);
         }
+
+        foreach ($paths as $path) {
+            if (
+                !empty($path) &&
+                Storage::disk('public')->exists($path)
+            ) {
+                Log::info('THUMBNAIL RESOLVE', [
+                    'product_id' => $this->id,
+                    'resolved' => $path,
+                    'url' => Storage::url($path),
+                    'exists' => true,
+                ]);
+
+                return Storage::url($path);
+            }
+        }
+
+        Log::warning('THUMBNAIL MISSING', [
+            'product_id' => $this->id,
+            'thumbnail' => $this->thumbnail,
+            'image' => $first?->image,
+        ]);
 
         return asset('images/placeholders/product.webp');
     }
