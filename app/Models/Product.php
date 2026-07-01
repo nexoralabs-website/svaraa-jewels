@@ -90,25 +90,39 @@ class Product extends Model
     public function getThumbnailUrlAttribute(): string
     {
         $path = $this->thumbnail;
-        $path = ltrim($path, '/');
-        $path = preg_replace('#^storage/#', '', $path);
+
+        if ($path) {
+            $path = preg_replace('#^storage/#', '', $path);
+        }
 
         Log::info('THUMBNAIL RESOLVE', [
-            'thumbnail'=>$this->thumbnail,
-            'url'=>$path,
-            'exists'=>Storage::disk('public')->exists($this->thumbnail),
+            'thumbnail' => $this->thumbnail,
+            'path' => $path,
+            'exists' => $path
+                ? Storage::disk('public')->exists($path)
+                : false,
         ]);
 
-        if ($path && Storage::disk('public')->exists($path)) {
+        if (
+            !empty($path) &&
+            Storage::disk('public')->exists($path)
+        ) {
             return Storage::url($path);
         }
 
-        $first = $this->images()->orderBy('id')->first();
-        if ($first && $first->image && Storage::disk('public')->exists($first->image)) {
+        $first = $this->images()
+            ->orderBy('id')
+            ->first();
+
+        if (
+            $first &&
+            !empty($first->image) &&
+            Storage::disk('public')->exists($first->image)
+        ) {
             return Storage::url($first->image);
         }
 
-        return asset('images/placeholder.svg');
+        return asset('images/placeholders/product.webp');
     }
 
     /**
