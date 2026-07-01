@@ -51,9 +51,6 @@ RUN composer config -g process-timeout 2000 && composer install --no-dev --optim
 RUN npm ci --production=false --no-audit --no-fund
 RUN npm run build
 
-# Permissions
-RUN chown -R www-data:www-data storage bootstrap/cache
-
 # Pre-flight cache clear (idempotent, swallow errors on first deploy)
 RUN php artisan config:clear || true
 
