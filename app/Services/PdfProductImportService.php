@@ -241,17 +241,15 @@ class PdfProductImportService
                     $safeName = $this->sanitiseFilename($pdfBaseName);
                     $suffix   = $uniqueOnPage > 0 ? "-img{$uniqueOnPage}" : '';
                     $filename = "products/{$safeName}-p{$pageNumber}{$suffix}.{$ext}";
+                    Storage::disk('public')->makeDirectory('products');
                     $optimizedBytes = $this->resizeImage($bytes, $ext);
                     Storage::disk('public')->put($filename, $optimizedBytes);
 
                     $imagePath = $filename;
-                    logger()->info('pdf_image_saved', [
-                        'path'       => $imagePath,
-                        'url'        => Storage::url($imagePath),
-                        'exists'     => Storage::disk('public')->exists($imagePath),
-                        'size_bytes' => strlen($optimizedBytes),
-                        'page'       => $pageNumber,
-                        'pdf'        => $pdfBaseName,
+                    Log::info('IMAGE SAVED', [
+                        'path'=>$imagePath,
+                        'exists'=>Storage::disk('public')->exists($imagePath),
+                        'url'=>Storage::disk('public')->url($imagePath)
                     ]);
 
                     $this->seenSha[$sha]     = count($candidates);
