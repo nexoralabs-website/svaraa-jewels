@@ -127,6 +127,10 @@ class PdfProductImportService
             throw new \RuntimeException('The PDF contains no pages.');
         }
 
+        Log::info('PDF IMPORT START', [
+            'pdf'=>$pdfPath,
+        ]);
+
         $pdfBaseName = pathinfo($pdfStoredPath, PATHINFO_FILENAME);
         // $candidates is an ordered list; dedup patches it by reference.
         $candidates  = [];
@@ -249,7 +253,9 @@ class PdfProductImportService
                     Log::info('IMAGE SAVED', [
                         'path'=>$filename,
                         'exists'=>Storage::disk('public')->exists($filename),
+                        'absolute'=>Storage::disk('public')->path($filename),
                         'url'=>Storage::disk('public')->url($filename),
+                        'size'=>Storage::disk('public')->size($filename),
                     ]);
 
                     $this->seenSha[$sha]     = count($candidates);
@@ -280,13 +286,9 @@ class PdfProductImportService
             }
         }
 
-        logger()->info('pdf_extraction_complete', [
-            'pdf' => $pdfBaseName,
-            'pages_scanned' => $this->pagesScanned,
-            'extracted' => $this->extractedCount,
-            'duplicates' => $this->duplicateCount,
-            'placeholders' => $this->placeholderCount,
-            'failed' => $this->failedCount,
+        Log::info('PDF IMPORT COMPLETE', [
+            'count'=>count($candidates),
+            'images'=>$candidates,
         ]);
 
         return $candidates;
@@ -743,6 +745,7 @@ class PdfProductImportService
         $jpeg = (string) ob_get_clean();
         imagedestroy($im);
 
+        Storage::disk('public')->makeDirectory('products');
         $path = "products/{$baseName}-p{$pageNumber}-placeholder.jpg";
         Storage::disk('public')->put($path, $jpeg);
 

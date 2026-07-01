@@ -114,13 +114,9 @@ class ProcessPdfBulkUploadJob implements ShouldQueue, ShouldBeUnique
 
             $candidates = $pdfService->extractCandidates($absPath, $this->filePath);
 
-            logger()->info('pdf_extraction_complete', [
-                'pdf' => $this->filePath,
-                'pages_scanned' => $pdfService->pagesScanned,
-                'extracted' => $pdfService->extractedCount,
-                'duplicates' => $pdfService->duplicateCount,
-                'placeholders' => $pdfService->placeholderCount,
-                'failed' => $pdfService->failedCount,
+            Log::info('EXTRACTION RESULT', [
+                'count'=>count($candidates),
+                'images'=>$candidates,
             ]);
 
             $pageCount = $this->endPage - $this->startPage + 1;
@@ -157,15 +153,6 @@ class ProcessPdfBulkUploadJob implements ShouldQueue, ShouldBeUnique
                         'from_embedded'     => $candidate['from_embedded'],
                         'pages_found'       => $candidate['pages_found'] ?? [$pageNumber],
                     ],
-                ]);
-
-                logger()->info('pdf_preview_created', [
-                    'preview_id'     => $preview->id,
-                    'image_path'     => $candidate['stored_path'],
-                    'storage_url'    => Storage::url($candidate['stored_path']),
-                    'file_exists'    => Storage::disk('public')->exists($candidate['stored_path']),
-                    'page'           => $pageNumber,
-                    'pdf'            => $this->filePath,
                 ]);
 
                 $previewCount++;

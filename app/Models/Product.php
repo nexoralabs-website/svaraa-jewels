@@ -93,22 +93,18 @@ class Product extends Model
         $path = ltrim($path, '/');
         $path = preg_replace('#^storage/#', '', $path);
 
+        Log::info('THUMBNAIL RESOLVE', [
+            'thumbnail'=>$this->thumbnail,
+            'url'=>$path,
+            'exists'=>Storage::disk('public')->exists($this->thumbnail),
+        ]);
+
         if ($path && Storage::disk('public')->exists($path)) {
-            Log::channel('daily')->debug('Thumbnail URL resolved', [
-                'path' => $path,
-                'exists' => Storage::disk('public')->exists($path),
-                'url' => Storage::url($path),
-                'storage_link_exists' => file_exists(public_path('storage')),
-            ]);
             return Storage::url($path);
         }
 
         $first = $this->images()->orderBy('id')->first();
         if ($first && $first->image && Storage::disk('public')->exists($first->image)) {
-            Log::channel('daily')->debug('Fallback image URL resolved', [
-                'path' => $first->image,
-                'url' => Storage::url($first->image),
-            ]);
             return Storage::url($first->image);
         }
 
