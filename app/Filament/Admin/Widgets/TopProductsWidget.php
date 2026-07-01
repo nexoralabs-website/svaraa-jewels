@@ -16,7 +16,7 @@ class TopProductsWidget extends BaseWidget
     public function table(Table $table): Table
     {
         return $table
-            ->query(
+            ->records(
                 OrderItem::query()
                     ->reorder()
                     ->selectRaw('
@@ -29,9 +29,13 @@ class TopProductsWidget extends BaseWidget
                     ->whereHas('order', function ($q) {
                         $q->where('payment_status', 'captured');
                     })
-                    ->groupBy('product_id', 'product_name')
+                    ->groupBy(
+                        'product_id',
+                        'product_name'
+                    )
                     ->orderByDesc('total_sold')
                     ->limit(10)
+                    ->get()
             )
             ->columns([
                 TextColumn::make('product_name')
@@ -41,17 +45,14 @@ class TopProductsWidget extends BaseWidget
 
                 TextColumn::make('total_sold')
                     ->label('Units Sold')
-                    ->sortable()
                     ->badge()
                     ->color('success'),
 
                 TextColumn::make('order_count')
-                    ->label('Orders')
-                    ->sortable(),
+                    ->label('Orders'),
 
                 TextColumn::make('total_revenue')
                     ->label('Revenue')
-                    ->sortable()
                     ->formatStateUsing(fn ($state) => '₹' . number_format($state, 2))
                     ->color('warning'),
             ])
