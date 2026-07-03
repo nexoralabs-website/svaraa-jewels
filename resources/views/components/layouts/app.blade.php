@@ -7,26 +7,15 @@
 
     <title>{{ $title ?? 'Svaraa Jewels' }} | Timeless Elegance</title>
 
-    <!-- SEO Meta Tags -->
-    @isset($seo)
-    <meta name="description" content="{{ $seo['description'] ?? '' }}">
-    <link rel="canonical" href="{{ $seo['canonical'] ?? url()->current() }}">
-    <meta property="og:type"        content="{{ $seo['og_type']        ?? 'website' }}">
-    <meta property="og:title"       content="{{ $seo['og_title']       ?? ($title ?? 'Svaraa Jewels') }}">
-    <meta property="og:description" content="{{ $seo['og_description'] ?? '' }}">
-    <meta property="og:image"       content="{{ $seo['og_image']       ?? asset('images/og-default.jpg') }}">
-    <meta property="og:url"         content="{{ $seo['og_url']         ?? url()->current() }}">
-    <meta property="og:site_name"   content="{{ config('app.name') }}">
-    <meta name="twitter:card"       content="summary_large_image">
-    <meta name="twitter:title"      content="{{ $seo['og_title']       ?? ($title ?? 'Svaraa Jewels') }}">
-    <meta name="twitter:description" content="{{ $seo['og_description'] ?? '' }}">
-    <meta name="twitter:image"      content="{{ $seo['og_image']       ?? asset('images/og-default.jpg') }}">
-    @if(!empty($seo['json_ld']))
-    <script type="application/ld+json">{!! json_encode($seo['json_ld'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}</script>
-    @endif
-    @else
+    <!-- SEO Meta Tags
+         Pages with custom SEO push into the 'seo' stack:
+             @push('seo')
+                 <x-seo-meta :title="..." :description="..." :canonical="..." ... />
+             @endpush
+         Pages that push nothing get the default description below.
+    -->
+    @stack('seo')
     <meta name="description" content="Discover handcrafted luxury earrings at Svaraa Jewels. Everyday elegance and special moments, crafted for you.">
-    @endisset
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">

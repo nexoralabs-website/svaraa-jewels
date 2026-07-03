@@ -1,13 +1,29 @@
 <x-layouts.app>
     <x-slot:title>{{ $product->name }} | Svaraa Jewels</x-slot:title>
-    <x-slot:seo>
+
+    @push('seo')
         <x-seo-meta
-            :title="$product->seo_title"
+            :title="$product->seo_title ?? ($product->name . ' | Svaraa Jewels')"
             :description="$product->seo_description"
             :canonical="route('products.show', $product->slug)"
             :og-image="$product->og_image ? Storage::url($product->og_image) : null"
-            :schema="['@type' => 'Product', 'name' => $product->name, 'aggregateRating' => $product->review_count > 0 ? ['@type' => 'AggregateRating', 'ratingValue' => $product->average_rating, 'reviewCount' => $product->review_count] : null, 'offers' => ['@type' => 'Offer', 'price' => $product->price, 'priceCurrency' => 'INR', 'availability' => $product->stock > 0 ? 'InStock' : 'OutOfStock']]" />
-    </x-slot:seo>
+            :schema="[
+                '@context' => 'https://schema.org',
+                '@type'    => 'Product',
+                'name'     => $product->name,
+                'aggregateRating' => $product->review_count > 0 ? [
+                    '@type'       => 'AggregateRating',
+                    'ratingValue' => $product->average_rating,
+                    'reviewCount' => $product->review_count,
+                ] : null,
+                'offers' => [
+                    '@type'        => 'Offer',
+                    'price'        => $product->price,
+                    'priceCurrency'=> 'INR',
+                    'availability' => $product->stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+                ],
+            ]" />
+    @endpush
 
     {{-- Breadcrumb --}}
     <div class="bg-white border-b border-gray-100">
