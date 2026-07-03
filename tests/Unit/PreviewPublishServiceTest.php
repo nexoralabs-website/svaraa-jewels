@@ -167,26 +167,23 @@ class PreviewPublishServiceTest extends TestCase
 
     // ── publishSingle() — guard: already published ────────────────────────
 
-    public function test_publish_single_throws_when_already_published(): void
+    public function test_publish_single_returns_existing_product_when_preview_is_already_published(): void
     {
         $preview = $this->makeReadyPreview();
-        $this->service->publishSingle($preview);
+        $first   = $this->service->publishSingle($preview);
+        $second  = $this->service->publishSingle($preview->fresh());
 
-        // After publishing, status is PUBLISHED → "not READY" guard fires first
-        $this->expectException(LogicException::class);
-
-        $this->service->publishSingle($preview->fresh());
+        $this->assertSame($first->id, $second->id);
+        $this->assertSame(1, Product::where('bulk_upload_preview_id', $preview->id)->count());
     }
 
-    public function test_publish_single_throws_when_ready_but_product_id_already_set(): void
+    public function test_publish_single_throws_when_published_product_link_is_missing(): void
     {
-        // Simulate a state where status is READY but published_product_id was
-        // somehow set (e.g. partial failure recovery) — second guard fires
         $preview = $this->makeReadyPreview();
-        $preview->forceFill(['published_product_id' => 9999])->save();
+        $preview->forceFill(['status' => PreviewStatus::PUBLISHED, 'published_product_id' => 9999])->save();
 
         $this->expectException(LogicException::class);
-        $this->expectExceptionMessageMatches('/already published/');
+        $this->expectExceptionMessageMatches('/does not exist/');
 
         $this->service->publishSingle($preview->fresh());
     }
@@ -352,12 +349,4 @@ class PreviewPublishServiceTest extends TestCase
 
     // ── Duplicate protection ──────────────────────────────────────────────
 
-    public function test_cannot_publish_same_preview_twice(): void
-    {
-        $preview = $this->makeReadyPreview();
-        $this->service->publishSingle($preview);
-
-        $this->expectException(LogicException::class);
-        $this->service->publishSingle($preview->fresh());
-    }
 }

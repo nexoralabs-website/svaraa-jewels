@@ -71,6 +71,11 @@ class PublishBulkProductsJob implements ShouldQueue, ShouldBeUnique
         return "publish:{$this->batchUuid}";
     }
 
+    public function uniqueFor(): int
+    {
+        return 3600;
+    }
+
     // ── Handle ────────────────────────────────────────────────────────────
 
     public function handle(PreviewPublishService $publisher): void
