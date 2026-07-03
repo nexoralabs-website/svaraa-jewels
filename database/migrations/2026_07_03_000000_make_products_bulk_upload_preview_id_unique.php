@@ -13,7 +13,7 @@ return new class extends Migration
             ->select('bulk_upload_preview_id', DB::raw('COUNT(*) as duplicate_count'))
             ->whereNotNull('bulk_upload_preview_id')
             ->groupBy('bulk_upload_preview_id')
-            ->having('duplicate_count', '>', 1)
+            ->havingRaw('COUNT(*) > 1')
             ->limit(1)
             ->first();
 
