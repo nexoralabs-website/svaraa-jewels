@@ -3,16 +3,18 @@
     'description' => null,
     'canonical' => null,
     'ogImage' => null,
+    'ogType' => 'website',
     'schema' => null,
 ])
 
 @php
     $seo = [
-        'title' => $title,
+        'title'       => $title,
         'description' => $description,
-        'canonical' => $canonical,
-        'og_image' => $ogImage,
-        'json_ld' => $schema,
+        'canonical'   => $canonical,
+        'og_image'    => $ogImage,
+        'og_type'     => $ogType,
+        'json_ld'     => $schema,
     ];
 @endphp
 

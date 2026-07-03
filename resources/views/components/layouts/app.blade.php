@@ -5,17 +5,32 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ $title ?? 'Svaraa Jewels' }} | Timeless Elegance</title>
+    {{--
+        SEO Meta Tags.
 
-    <!-- SEO Meta Tags
-         Pages with custom SEO push into the 'seo' stack:
-             @push('seo')
-                 <x-seo-meta :title="..." :description="..." :canonical="..." ... />
-             @endpush
-         Pages that push nothing get the default description below.
-    -->
+        Pages push full SEO into the 'seo' stack via:
+            @push('seo')
+                <x-seo-meta :title="..." :description="..." ... />
+            @endpush
+        x-seo-meta renders <title>, description, canonical, OG, Twitter, JSON-LD.
+
+        Pages that do NOT push custom SEO still get a <title> from the
+        <x-slot:title> prop (rendered below the stack), plus a generic description.
+
+        IMPORTANT: when a page DOES push x-seo-meta, that component already
+        renders a <title>. The <title> below becomes a duplicate. Browsers
+        use the FIRST <title> encountered in <head>, so the stack output wins.
+        The duplicate generic title is suppressed by x-seo-meta setting the
+        Blade section '__seo_pushed__', which we check with @hasSection.
+    --}}
     @stack('seo')
+
+    @hasSection('__seo_pushed__')
+    {{-- x-seo-meta already rendered title + description via the stack above --}}
+    @else
+    <title>{{ $title ?? 'Svaraa Jewels' }} | Timeless Elegance</title>
     <meta name="description" content="Discover handcrafted luxury earrings at Svaraa Jewels. Everyday elegance and special moments, crafted for you.">
+    @endif
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">

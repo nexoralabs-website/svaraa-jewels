@@ -19,6 +19,11 @@
     $jsonLd = $seo['json_ld']       ?? null;
 @endphp
 
+{{-- Signal to app.blade.php that custom SEO has been pushed, suppressing the
+     generic fallback <title> and <meta description>. --}}
+@section('__seo_pushed__')
+@endsection
+
 <title>{{ $title }}</title>
 <meta name="description" content="{{ $desc }}">
 <link rel="canonical" href="{{ $canon }}">

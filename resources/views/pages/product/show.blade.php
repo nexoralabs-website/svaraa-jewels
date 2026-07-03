@@ -6,7 +6,12 @@
             :title="$product->seo_title ?? ($product->name . ' | Svaraa Jewels')"
             :description="$product->seo_description"
             :canonical="route('products.show', $product->slug)"
-            :og-image="$product->og_image ? Storage::url($product->og_image) : null"
+            og-type="product"
+            :og-image="$product->og_image
+                ? (str_starts_with(Storage::url($product->og_image), 'http')
+                    ? Storage::url($product->og_image)
+                    : url(Storage::url($product->og_image)))
+                : null"
             :schema="[
                 '@context' => 'https://schema.org',
                 '@type'    => 'Product',
