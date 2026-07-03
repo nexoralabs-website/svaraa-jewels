@@ -41,4 +41,21 @@ return [
         'webhook_secret' => env('RAZORPAY_WEBHOOK_SECRET'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Payment Feature Flag
+    |--------------------------------------------------------------------------
+    |
+    | When set to false, customer-facing online payments (card, UPI) are
+    | disabled. Cash on Delivery remains available. The entire Razorpay
+    | integration, webhook handling, reconciliation, and payment models are
+    | preserved and will activate automatically when this is set to true.
+    |
+    | To re-enable: set PAYMENTS_ENABLED=true in .env — no code changes needed.
+    |
+    */
+    'payments' => [
+        'enabled' => env('PAYMENTS_ENABLED', false),
+    ],
+
 ];

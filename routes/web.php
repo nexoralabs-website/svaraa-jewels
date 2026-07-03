@@ -94,10 +94,10 @@ Route::delete('/cart/remove/{id}', [CartController::class, 'remove'])->name('car
 Route::delete('/cart/clear', [CartController::class, 'clear'])->name('cart.clear');
 
 // Razorpay routes (public for webhook; verify/create use auth-gated session check)
-Route::post('/payment/create', [RazorpayController::class, 'createOrder'])->middleware('throttle:payment_create')->name('payment.create');
-Route::post('/payment/verify', [RazorpayController::class, 'verifyPayment'])->middleware('throttle:payment_verify')->name('payment.verify');
+Route::post('/payment/create', [RazorpayController::class, 'createOrder'])->middleware(['throttle:payment_create', 'payments.enabled'])->name('payment.create');
+Route::post('/payment/verify', [RazorpayController::class, 'verifyPayment'])->middleware(['throttle:payment_verify', 'payments.enabled'])->name('payment.verify');
 Route::get('/payment/status/{order}', [RazorpayController::class, 'paymentStatus'])->name('payment.status');
-Route::post('/payment/retry/{order}', [RazorpayController::class, 'retryPayment'])->name('payment.retry');
+Route::post('/payment/retry/{order}', [RazorpayController::class, 'retryPayment'])->middleware('payments.enabled')->name('payment.retry');
 Route::post('/webhooks/razorpay', [RazorpayController::class, 'webhook'])->middleware('throttle:payment_webhook')->name('payment.webhook');
 
 Route::middleware(['auth'])->group(function () {

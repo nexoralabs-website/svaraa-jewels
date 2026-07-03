@@ -70,6 +70,12 @@ class ProcessPdfBulkUploadJob implements ShouldQueue, ShouldBeUnique
 
     public function handle(BulkUploadService $service, PdfProductImportService $pdfService): void
     {
+        Log::info('JOB START', [
+            'batch'=>$this->batchUuid,
+            'file'=>$this->filePath,
+            'pages'=>"{$this->startPage}-{$this->endPage}"
+        ]);
+
         $startedAt = now();
         $memBefore = memory_get_usage(true);
 
@@ -185,6 +191,11 @@ class ProcessPdfBulkUploadJob implements ShouldQueue, ShouldBeUnique
                 ]);
             }
 
+            Log::info('JOB COMPLETE', [
+                'batch'=>$this->batchUuid,
+                'preview_count'=>$previewCount ?? 0
+            ]);
+
             // ── 8. Write success job log ──────────────────────────────────
             $this->writeJobLog(
                 batchUuid:  $batch->id,
@@ -194,6 +205,10 @@ class ProcessPdfBulkUploadJob implements ShouldQueue, ShouldBeUnique
             );
 
         } catch (Throwable $e) {
+            Log::error('JOB FAILED', [
+                'batch'=>$this->batchUuid,
+                'message'=>$e->getMessage()
+            ]);
             $step->markFailed($e->getMessage())->save();
 
             $this->writeJobLog(

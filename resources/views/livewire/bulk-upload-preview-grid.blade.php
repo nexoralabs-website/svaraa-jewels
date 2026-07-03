@@ -80,11 +80,34 @@
         </div>
     </div>
 
+    {{-- ── Selection Toolbar ───────────────────────────────────────── --}}
+    <div class="flex items-center gap-3 mb-4">
+        <button
+            type="button"
+            wire:click="selectAllRows"
+            class="text-sm text-primary-600 hover:underline"
+        >
+            Select all
+        </button>
+
+        <span>|</span>
+
+        <button
+            type="button"
+            wire:click="deselectAllRows"
+            class="text-sm text-gray-600 hover:underline"
+        >
+            Deselect all
+        </button>
+
+        <span>{{ count($selectedRows) }} row(s) selected</span>
+    </div>
+
     {{-- ── Bulk actions ─────────────────────────────────────────────────── --}}
-    @if(count($selectedIds) > 0)
+    @if(count($selectedRows) > 0)
     <div class="flex flex-wrap items-center gap-2 p-3 bg-primary-50 dark:bg-primary-900/20 rounded-xl border border-primary-200 dark:border-primary-700">
         <span class="text-sm font-medium text-primary-700 dark:text-primary-300">
-            {{ count($selectedIds) }} selected
+            {{ count($selectedRows) }} selected
         </span>
         <button wire:click="publishSelected"
                 class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg bg-green-600 hover:bg-green-700 text-white transition-colors">
@@ -104,10 +127,10 @@
         </button>
         <button wire:click="deleteSelected"
                 class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg bg-red-600 hover:bg-red-700 text-white transition-colors"
-                wire:confirm="Delete {{ count($selectedIds) }} selected rows? This cannot be undone.">
+                wire:confirm="Delete {{ count($selectedRows) }} selected rows? This cannot be undone.">
             &#x1F5D1; Delete
         </button>
-        <button wire:click="$set('selectedIds', []); $set('selectAll', false)"
+        <button wire:click="$set('selectedRows', []); $set('selectedIds', [])"
                 class="ml-auto text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
             Clear selection
         </button>
@@ -129,8 +152,10 @@
             <thead class="bg-gray-50 dark:bg-gray-900/50">
                 <tr>
                     <th class="w-10 px-3 py-3">
-                        <input type="checkbox" wire:model.live="selectAll"
-                               class="rounded border-gray-300 dark:border-gray-600 text-primary-600">
+                        <input type="checkbox"
+                            wire:click="{{ count($selectedRows) === $previews->count() ? 'deselectAllRows' : 'selectAllRows' }}"
+                            {{ count($selectedRows) === $previews->count() ? 'checked' : '' }}
+                            class="rounded border-gray-300 dark:border-gray-600 text-primary-600">
                     </th>
                     <th class="px-3 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-20">Image</th>
                     <th class="px-3 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Product Name</th>
@@ -160,14 +185,12 @@
                                 : 'text-red-500 dark:text-red-400');
                     $isEditing  = isset($editValues[$preview->id]);
                 @endphp
-                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors @if($isEditing) ring-2 ring-inset ring-primary-400 @endif">
-
-                    {{-- Checkbox --}}
+                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors @if($isEditing) ring-2 ring-inset ring-primary-400 @endif {{ in_array($preview->id, $selectedRows) ? 'ring-2 ring-primary-500 bg-primary-50' : '' }}">
                     <td class="px-3 py-2 text-center">
                         <input type="checkbox"
-                               wire:model.live="selectedIds"
-                               value="{{ $preview->id }}"
-                               class="rounded border-gray-300 dark:border-gray-600 text-primary-600">
+                            value="{{ $preview->id }}"
+                            wire:model.live="selectedRows"
+                            class="rounded border-gray-300 dark:border-gray-600 text-primary-600">
                     </td>
 
                     {{-- Preview image --}}

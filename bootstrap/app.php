@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\PaymentsEnabled;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\TrustProxies;
 use Illuminate\Foundation\Application;
@@ -22,6 +23,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             SecurityHeaders::class,
             TrustProxies::class,
+        ]);
+
+        $middleware->alias([
+            'payments.enabled' => PaymentsEnabled::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

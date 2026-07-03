@@ -59,6 +59,21 @@ class CheckoutController extends Controller
             return redirect()->route('cart.index')->with('error', 'Your cart is empty.');
         }
 
+        // Guard: block online payment methods when payments are disabled.
+        // COD is always allowed. The frontend also hides card/UPI options,
+        // but this server-side check prevents direct POST manipulation.
+        if ($validated['payment_method'] !== 'cod' && ! config('services.payments.enabled')) {
+            $message = 'Online payments are temporarily unavailable. '
+                . 'We are currently completing our payment gateway setup. '
+                . 'Please check back soon, or place your order using Cash on Delivery.';
+
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'message' => $message], 503);
+            }
+
+            return back()->with('error', $message);
+        }
+
         try {
             $order = $this->checkoutService->placeOrder($validated);
 

@@ -150,6 +150,20 @@
                     {{-- Payment Method --}}
                     <div class="bg-white rounded-xl shadow-sm border border-[#E8DCCB]/60 p-6 md:p-8">
                         <h2 class="text-lg font-serif text-[#2E1A12] mb-5">Payment Method</h2>
+
+                        @if(! config('services.payments.enabled'))
+                        {{-- Payments disabled notice --}}
+                        <div class="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl p-4 mb-5">
+                            <svg class="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <div>
+                                <p class="text-sm font-medium text-amber-800">Online payments temporarily unavailable</p>
+                                <p class="text-xs text-amber-700 mt-1">We are currently completing our payment gateway setup. Please check back soon, or place your order using Cash on Delivery below.</p>
+                            </div>
+                        </div>
+                        @endif
+
                         <div class="space-y-3">
                             <label class="flex items-center gap-4 p-4 border rounded-xl cursor-pointer transition-colors"
                                    :class="form.payment_method === 'cod' ? 'border-[#C8A35D] bg-[#C8A35D]/5' : 'border-gray-200 hover:border-[#C8A35D]/50'">
@@ -160,6 +174,8 @@
                                 </div>
                                 <span class="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded">Free</span>
                             </label>
+
+                            @if(config('services.payments.enabled'))
                             <label class="flex items-center gap-4 p-4 border rounded-xl cursor-pointer transition-colors"
                                    :class="form.payment_method === 'card' ? 'border-[#C8A35D] bg-[#C8A35D]/5' : 'border-gray-200 hover:border-[#C8A35D]/50'">
                                 <input type="radio" name="payment_method" value="card" x-model="form.payment_method" class="text-[#C8A35D] focus:ring-[#C8A35D]">
@@ -176,6 +192,7 @@
                                     <p class="text-xs text-gray-500 mt-0.5">Google Pay, PhonePe, Paytm</p>
                                 </div>
                             </label>
+                            @endif
                         </div>
                     </div>
 
@@ -271,17 +288,17 @@
             isProcessing: false,
             alert: { type: null, message: '' },
             form: {
-                customer_name:    '{{ old(\'customer_name\', auth()->user()->name ?? \'\') }}',
-                customer_email:   '{{ old(\'customer_email\', auth()->user()->email ?? \'\') }}',
-                customer_phone:   '{{ old(\'customer_phone\', \'\') }}',
-                address_id:       {{ old(\'address_id\', $selectedAddressId ?? \'null\') }},
-                shipping_address: '{{ old(\'shipping_address\', \'\') }}',
-                city:             '{{ old(\'city\', \'\') }}',
-                state:            '{{ old(\'state\', \'\') }}',
-                pincode:          '{{ old(\'pincode\', \'\') }}',
-                country:          '{{ old(\'country\', \'India\') }}',
-                payment_method:   '{{ old(\'payment_method\', \'cod\') }}',
-                notes:            '{{ old(\'notes\', \'\') }}',
+                customer_name:    '{{ old('customer_name', auth()->user()->name ?? '') }}',
+                customer_email:   '{{ old('customer_email', auth()->user()->email ?? '') }}',
+                customer_phone:   '{{ old('customer_phone', '') }}',
+                address_id:       '{{ old('address_id', $selectedAddressId ?? 'null') }}',
+                shipping_address: '{{ old('shipping_address', '') }}',
+                city:             '{{ old('city', '') }}',
+                state:            '{{ old('state', '') }}',
+                pincode:          '{{ old('pincode', '') }}',
+                country:          '{{ old('country', 'India') }}',
+                payment_method:   '{{ old('payment_method', 'cod') }}',
+                notes:            '{{ old('notes', '') }}',
             },
 
             init() {
@@ -338,7 +355,7 @@
                     handler: async (response) => {
                         this.alert = { type: 'processing', message: 'Confirming your payment...' };
                         try {
-                            const verifyRes = await fetch('{{ route(\'payment.verify\') }}', {
+                            const verifyRes = await fetch('{{ route('payment.verify') }}', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
                                 body: JSON.stringify(response),
@@ -406,7 +423,7 @@
                 this.couponLoading = true;
                 this.couponError   = '';
                 try {
-                    const res = await fetch('{{ route(\'checkout.coupon.apply\') }}', {
+                    const res = await fetch('{{ route('checkout.coupon.apply') }}', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -437,7 +454,7 @@
             async removeCoupon() {
                 this.couponLoading = true;
                 try {
-                    const res = await fetch('{{ route(\'checkout.coupon.remove\') }}', {
+                    const res = await fetch('{{ route('checkout.coupon.remove') }}', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -491,5 +508,7 @@
         };
     }
     </script>
+    @if(config('services.payments.enabled'))
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    @endif
 </x-layouts.app>

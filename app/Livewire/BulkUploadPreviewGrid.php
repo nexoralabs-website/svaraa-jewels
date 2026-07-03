@@ -58,6 +58,48 @@ class BulkUploadPreviewGrid extends Component
 
     public bool $selectAll = false;
 
+    public array $selectedRows = [];
+
+    public function selectAllRows(): void
+    {
+        $this->selectedRows =
+            $this->previews()
+                ->pluck('id')
+                ->toArray();
+        $this->selectedIds = $this->selectedRows;
+    }
+
+    public function deselectAllRows(): void
+    {
+        $this->selectedRows = [];
+        $this->selectedIds = [];
+    }
+
+    public function toggleRow(int $id): void
+    {
+        if (in_array($id, $this->selectedRows)) {
+            $this->selectedRows =
+                array_values(
+                    array_diff(
+                        $this->selectedRows,
+                        [$id]
+                    )
+                );
+        } else {
+            $this->selectedRows[] = $id;
+        }
+    }
+
+    public function updatedSelectedRows(): void
+    {
+        $this->selectedIds = $this->selectedRows;
+    }
+
+    public function updatedSelectedIds(): void
+    {
+        $this->selectedRows = $this->selectedIds;
+    }
+
     // ── Inline edit state ─────────────────────────────────────────────────
 
     /**
@@ -102,6 +144,12 @@ class BulkUploadPreviewGrid extends Component
             'statusCounts'   => $this->statusCounts(),
             'activeBatches'  => $this->activeBatches(),
         ]);
+    }
+
+    /** Helper to access current previews collection for selection */
+    public function previews()
+    {
+        return $this->loadPreviews()->getCollection();
     }
 
     // ── Query ─────────────────────────────────────────────────────────────
@@ -584,13 +632,14 @@ class BulkUploadPreviewGrid extends Component
     {
         if ($value) {
             // Select all IDs on the current page
-            $this->selectedIds = $this->loadPreviews()
-                ->getCollection()
+            $this->selectedIds = $this->previews()
                 ->pluck('id')
                 ->map(fn ($id) => (int) $id)
                 ->toArray();
+            $this->selectedRows = $this->selectedIds;
         } else {
             $this->selectedIds = [];
+            $this->selectedRows = [];
         }
     }
 
