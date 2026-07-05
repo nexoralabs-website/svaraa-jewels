@@ -28,7 +28,13 @@ class AppServiceProvider extends ServiceProvider
     {
         if (app()->environment('production')) {
             DB::disableQueryLog();
-            URL::forceScheme('https');
+
+            $appUrl = config('app.url');
+            $scheme = strtolower((string) parse_url($appUrl, PHP_URL_SCHEME));
+
+            if ($scheme === 'https') {
+                URL::forceScheme('https');
+            }
         }
 
         // Temporary diagnostics: log Filament / auth failures

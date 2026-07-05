@@ -15,9 +15,9 @@ services:
       - redis
     restart: always
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/up"]
+      test: ["CMD", "php", "-r", "exit(@file_get_contents('http://127.0.0.1/up', false, stream_context_create(['http' => ['protocol_version' => '1.0']])) ? 0 : 1);"]
       interval: 30s
-      timeout: 10s
+      timeout: 30s
       retries: 3
       start_period: 40s
     environment:
