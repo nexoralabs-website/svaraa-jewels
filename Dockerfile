@@ -1,75 +1,61 @@
 FROM php:8.2-apache
 
+# Set working directory
 WORKDIR /var/www/html
 
-# System dependencies
+# Install system dependencies, PHP extensions and Node.js
 RUN apt-get update && apt-get install -y \
-    git unzip curl libpng-dev libjpeg-dev libzip-dev zip libicu-dev libfreetype6-dev libpq-dev \
+    git unzip curl libpng-dev libjpeg-dev libzip-dev zip libicu-dev \
+    libfreetype6-dev libpq-dev default-mysql-client \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install \
-        pdo \
-        pdo_mysql \
-        pdo_pgsql \
-        pgsql \
-        gd \
-        zip \
-        intl
-
-# PHP extensions
-RUN pecl install redis && docker-php-ext-enable redis
-
-# Node.js for frontend build
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && docker-php-ext-install pdo pdo_mysql pdo_pgsql pgsql gd zip intl \
+    && pecl install redis && docker-php-ext-enable redis \
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
-    && npm install -g npm
+    && npm install -g npm \
+    && a2enmod rewrite \
+    && rm -rf /var/lib/apt/lists/*
 
-# Apache configuration
-RUN a2enmod rewrite
+# Configure Apache document root
 ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
-RUN sed -ri -e "s!/var/www/html!${APACHE_DOCUMENT_ROOT}!g" /etc/apache2/sites-available/*.conf && \
-    sed -ri -e "s!/var/www/!${APACHE_DOCUMENT_ROOT}!g" /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
+RUN sed -ri -e "s!/var/www/html!${APACHE_DOCUMENT_ROOT}!g" /etc/apache2/sites-available/*.conf \
+    && sed -ri -e "s!/var/www/!${APACHE_DOCUMENT_ROOT}!g" /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
+
+# Copy custom Apache vhost (ensure the file exists in the repo under ./apache/)
 COPY ./apache/000-default.conf /etc/apache2/sites-available/000-default.conf
 
-# Copy full application before composer so artisan exists
+# Install Composer binary
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer \
+    && composer config -g process-timeout 2000
+
+# Copy composer config first for dependency caching
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --no-autoloader --no-scripts --prefer-dist --no-progress --no-interaction
+
+# Copy npm config first for package caching
+COPY package.json package-lock.json ./
+RUN npm ci --no-audit --no-fund
+
+# Copy the rest of the application source code
 COPY . .
 
-# Create required directories for storage
-RUN mkdir -p storage/app/public/products
-RUN mkdir -p public
+# Complete composer autoload generation, build frontend assets, and prepare storage
+RUN composer dump-autoload --optimize --no-dev \
+    && npm run build \
+    && mkdir -p storage/app/public/products \
+    && rm -rf public/storage \
+    && php artisan storage:link \
+    && chown -R www-data:www-data storage bootstrap/cache public \
+    && chmod -R 775 storage bootstrap/cache public
 
-# Storage symlink must exist after COPY (idempotent; production symlink is created in build)
-RUN rm -rf public/storage || true
-RUN php artisan storage:link || true
-RUN chown -R www-data:www-data storage bootstrap/cache public
-RUN chmod -R 775 storage bootstrap/cache public
-
-# Composer
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
-RUN composer config -g process-timeout 2000 && composer install --no-dev --optimize-autoloader --prefer-dist --no-progress --no-interaction
-
-# Frontend build
-RUN npm ci --production=false --no-audit --no-fund
-RUN npm run build
-
-# Pre-flight cache clear (idempotent, swallow errors on first deploy)
+# Pre‑flight cache clear (idempotent)
 RUN php artisan config:clear || true
+
+# Add entrypoint script
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 EXPOSE 80
 
-CMD sh -c "\
-echo '===== STORAGE DEBUG =====' && \
-mkdir -p storage/app/public/products && \
-rm -rf public/storage || true && \
-php artisan storage:link || true && \
-echo '--- PUBLIC ---' && \
-ls -la public && \
-echo '--- STORAGE LINK ---' && \
-ls -la public/storage || true && \
-echo '--- STORAGE APP PUBLIC ---' && \
-ls -la storage/app/public || true && \
-echo '--- PRODUCTS ---' && \
-ls -la storage/app/public/products || true && \
-echo '===== LARAVEL START =====' && \
-php artisan migrate --force && \
-php artisan db:seed --force && \
-apache2-foreground"
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+CMD ["apache2-foreground"]

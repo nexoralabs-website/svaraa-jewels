@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   app:
     build:
@@ -8,29 +6,28 @@ services:
     container_name: svaraa_app
     ports:
       - "8081:80"
-    volumes:
-      - ./:/var/www/html
     depends_on:
       - mysql
       - redis
     restart: always
     healthcheck:
-      test: ["CMD", "php", "-r", "exit(@file_get_contents('http://127.0.0.1/up', false, stream_context_create(['http' => ['protocol_version' => '1.0']])) ? 0 : 1);"]
+      test: ["CMD", "php", "-r", "exit(@file_get_contents('http://127.0.0.1/up', false, stream_context_create(['http'=>['protocol_version'=>'1.0']])) ? 0 : 1);"]
       interval: 30s
       timeout: 30s
       retries: 3
       start_period: 40s
     environment:
-      APP_ENV: production
-      APP_DEBUG: false
-      APP_URL: http://localhost:8081
-      SESSION_SECURE_COOKIE: false
+      APP_ENV: ${APP_ENV:-production}
+      APP_DEBUG: ${APP_DEBUG:-false}
+      APP_KEY: ${APP_KEY}
+      APP_URL: ${APP_URL:-http://localhost:8081}
+      SESSION_SECURE_COOKIE: ${SESSION_SECURE_COOKIE:-false}
       DB_CONNECTION: mysql
       DB_HOST: svaraa_mysql
       DB_PORT: 3306
-      DB_DATABASE: svaraa_jewels
-      DB_USERNAME: laravel
-      DB_PASSWORD: secret
+      DB_DATABASE: ${DB_DATABASE:-svaraa_jewels}
+      DB_USERNAME: ${DB_USERNAME:-laravel}
+      DB_PASSWORD: ${DB_PASSWORD}
       CACHE_STORE: redis
       CACHE_PREFIX: svaraa_
       SESSION_DRIVER: redis
@@ -40,39 +37,52 @@ services:
       QUEUE_CONNECTION: redis
       REDIS_CLIENT: phpredis
       REDIS_HOST: redis
-      REDIS_PASSWORD: null
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-null}
       REDIS_PORT: 6379
       REDIS_QUEUE: svaraa_queue
+      RUN_MIGRATIONS: ${RUN_MIGRATIONS:-false}
     networks:
       - appnet
+    volumes:
+      - storage_data:/var/www/html/storage
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   mysql:
     image: mysql:8.0
     container_name: svaraa_mysql
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: svaraa_jewels
-      MYSQL_USER: laravel
-      MYSQL_PASSWORD: secret
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: ${DB_DATABASE:-svaraa_jewels}
+      MYSQL_USER: ${DB_USERNAME:-laravel}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
     ports:
-      - "3306:3306"
+      - "127.0.0.1:3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$${DB_ROOT_PASSWORD:-root}"]
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
       - appnet
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   redis:
     image: redis:7-alpine
     container_name: svaraa_redis
     restart: always
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -82,10 +92,16 @@ services:
       retries: 5
     networks:
       - appnet
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 volumes:
   mysql_data:
   redis_data:
+  storage_data:
 
 networks:
   appnet:
