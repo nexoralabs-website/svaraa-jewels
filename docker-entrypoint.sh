@@ -25,29 +25,56 @@ else
   fi
 fi
 
-# 2. Wait for MySQL to become reachable
-log "Waiting for MySQL at ${DB_HOST}:${DB_PORT}..."
-# Read database credentials from environment or fallback to parsing .env file for connection check
+# 2. Wait for database to become reachable
+CHECK_DB_CONN="$DB_CONNECTION"
 CHECK_DB_HOST="$DB_HOST"
 CHECK_DB_PORT="$DB_PORT"
 CHECK_DB_USER="$DB_USERNAME"
 CHECK_DB_PASS="$DB_PASSWORD"
 
 if [ -f .env ]; then
+  [ -z "$CHECK_DB_CONN" ] && CHECK_DB_CONN=$(grep -E '^DB_CONNECTION=' .env | cut -d '=' -f2- | tr -d '"'\'' ')
   [ -z "$CHECK_DB_HOST" ] && CHECK_DB_HOST=$(grep -E '^DB_HOST=' .env | cut -d '=' -f2- | tr -d '"'\'' ')
   [ -z "$CHECK_DB_PORT" ] && CHECK_DB_PORT=$(grep -E '^DB_PORT=' .env | cut -d '=' -f2- | tr -d '"'\'' ')
   [ -z "$CHECK_DB_USER" ] && CHECK_DB_USER=$(grep -E '^DB_USERNAME=' .env | cut -d '=' -f2- | tr -d '"'\'' ')
   [ -z "$CHECK_DB_PASS" ] && CHECK_DB_PASS=$(grep -E '^DB_PASSWORD=' .env | cut -d '=' -f2- | tr -d '"'\'' ')
 fi
 
-# Default fallbacks if both environment and .env fail to define host/port
+CHECK_DB_CONN="${CHECK_DB_CONN:-mysql}"
 CHECK_DB_HOST="${CHECK_DB_HOST:-127.0.0.1}"
-CHECK_DB_PORT="${CHECK_DB_PORT:-3306}"
 
-while ! mysqladmin ping -h"${CHECK_DB_HOST}" -P"${CHECK_DB_PORT}" -u"${CHECK_DB_USER}" -p"${CHECK_DB_PASS}" --skip-ssl --silent; do
-  sleep 2
-done
-log "MySQL is up."
+if [ "$CHECK_DB_CONN" = "pgsql" ]; then
+  CHECK_DB_PORT="${CHECK_DB_PORT:-5432}"
+  log "Waiting for PostgreSQL at ${CHECK_DB_HOST}:${CHECK_DB_PORT}..."
+  export PGPASSWORD="${CHECK_DB_PASS}"
+
+  until pg_isready \
+      -h "${CHECK_DB_HOST}" \
+      -p "${CHECK_DB_PORT}" \
+      -U "${CHECK_DB_USER}"
+  do
+      log "Waiting for PostgreSQL..."
+      sleep 2
+  done
+
+  log "PostgreSQL is up."
+else
+  CHECK_DB_PORT="${CHECK_DB_PORT:-3306}"
+  log "Waiting for MySQL at ${CHECK_DB_HOST}:${CHECK_DB_PORT}..."
+  while ! mysqladmin ping \
+      -h"${CHECK_DB_HOST}" \
+      -P"${CHECK_DB_PORT}" \
+      -u"${CHECK_DB_USER}" \
+      -p"${CHECK_DB_PASS}" \
+      --skip-ssl \
+      --silent
+  do
+      log "Waiting for MySQL..."
+      sleep 2
+  done
+
+  log "MySQL is up."
+fi
 
 # 3. Optional Database Migrations
 if [ "$RUN_MIGRATIONS" = "true" ]; then
