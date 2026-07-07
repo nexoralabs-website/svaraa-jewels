@@ -111,13 +111,21 @@ class Product extends Model
         foreach ($paths as $path) {
             if (!empty($path)) {
                 $exists = Storage::disk('public')->exists($path);
+                $diskPath = Storage::disk('public')->path($path);
+                $publicStorage = public_path('storage');
                 
                 logger()->info('THUMBNAIL DIAGNOSTICS', [
-                    'db_value'   => $rawPaths[$path] ?? null,
-                    'normalized' => $path,
-                    'exists'     => $exists,
-                    'url'        => Storage::disk('public')->url($path),
-                    'disk_root'  => Storage::disk('public')->path(''),
+                    'db_value'      => $rawPaths[$path] ?? null,
+                    'normalized'    => $path,
+                    'exists_method' => $exists,
+                    'url'           => Storage::disk('public')->url($path),
+                    'disk_path'     => $diskPath,
+                    'realpath'      => realpath($diskPath),
+                    'file_exists'   => file_exists($diskPath),
+                    'is_link'       => is_link($publicStorage),
+                    'readlink'      => is_link($publicStorage) ? @readlink($publicStorage) : null,
+                    'files_list'    => Storage::disk('public')->files('products'),
+                    'all_files_list'=> Storage::disk('public')->allFiles('products'),
                 ]);
 
                 if ($exists) {
