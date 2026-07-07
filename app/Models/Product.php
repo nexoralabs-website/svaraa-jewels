@@ -111,11 +111,11 @@ class Product extends Model
                 Log::info('THUMBNAIL RESOLVE', [
                     'product_id' => $this->id,
                     'resolved' => $path,
-                    'url' => Storage::url($path),
+                    'url' => Storage::disk('public')->url($path),
                     'exists' => true,
                 ]);
 
-                return Storage::url($path);
+                return Storage::disk('public')->url($path);
             }
         }
 

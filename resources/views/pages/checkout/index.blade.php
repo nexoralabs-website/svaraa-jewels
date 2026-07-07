@@ -216,7 +216,7 @@
                             @foreach(($cartItems ?? collect()) as $item)
                             <div class="flex gap-3">
                                 <div class="w-16 h-16 flex-shrink-0 bg-gray-50 rounded-lg overflow-hidden border border-gray-100">
-                                    <img src="{{ optional($item->product->images->first())->image ? asset('storage/' . optional($item->product->images->first())->image) : asset('images/placeholder.jpg') }}"
+                                    <img src="{{ $item->product->thumbnail_url }}"
                                          alt="{{ $item->product->name }}" class="w-full h-full object-cover" loading="lazy">
                                 </div>
                                 <div class="flex-1 min-w-0">

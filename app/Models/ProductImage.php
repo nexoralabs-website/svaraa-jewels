@@ -21,11 +21,11 @@ class ProductImage extends Model
             Log::channel('daily')->debug('ProductImage URL resolved', [
                 'path' => $this->image,
                 'exists' => Storage::disk('public')->exists($this->image),
-                'url' => Storage::url($this->image),
+                'url' => Storage::disk('public')->url($this->image),
             ]);
-            return Storage::url($this->image);
+            return Storage::disk('public')->url($this->image);
         }
-        return asset('images/placeholder.svg');
+        return asset('images/placeholders/product-coming-soon.svg');
     }
 
     /**

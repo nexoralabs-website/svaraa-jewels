@@ -54,7 +54,7 @@
                     <div class="w-20 h-20 flex-shrink-0 bg-gray-50 rounded-lg overflow-hidden">
                         <a href="{{ route('products.show', $item->product->slug) }}">
                             <img
-                                src="{{ optional($item->product->images->first())->image ? asset('storage/' . optional($item->product->images->first())->image) : asset('images/placeholder.jpg') }}"
+                                src="{{ $item->product->thumbnail_url }}"
                                 alt="{{ $item->product->name }}"
                                 class="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                             >

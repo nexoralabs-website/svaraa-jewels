@@ -6,12 +6,12 @@
     if ($product->images && $product->images->count()) {
         foreach ($product->images as $img) {
             if (!empty($img->image)) {
-                $images->push(Storage::url($img->image));
+                $images->push($img->image_url);
             }
         }
     }
     if ($images->isEmpty()) {
-        $images->push(asset('images/placeholder.svg'));
+        $images->push(asset('images/placeholders/product-coming-soon.svg'));
     }
 @endphp
 

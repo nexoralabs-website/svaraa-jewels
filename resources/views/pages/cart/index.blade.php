@@ -2,23 +2,16 @@
     $cartItems = collect($cartItems);
 
     $initialCartItems = $cartItems->map(function ($item) {
-        $imageUrl = asset('images/placeholder.jpg');
-        if (!empty($item->product->thumbnail)) {
-            $imageUrl = asset('storage/' . $item->product->thumbnail);
-        } elseif (!empty($item->product->images) && $item->product->images->count() > 0) {
-            $imageUrl = asset('storage/' . $item->product->images->first()->image);
-        }
-
         return [
-            'id' => $item->id,
+            'id'         => $item->id,
             'product_id' => $item->product_id ?? $item->product->id,
-            'name' => $item->product->name,
-            'price' => (float) $item->product->price,
-            'quantity' => (int) $item->quantity,
-            'image' => $imageUrl,
-            'slug' => $item->product->slug ?? '',
-            'stock' => $item->product->stock ?? 99,
-            'category' => $item->product->category?->name ?? 'Jewelry',
+            'name'       => $item->product->name,
+            'price'      => (float) $item->product->price,
+            'quantity'   => (int) $item->quantity,
+            'image'      => $item->product->thumbnail_url,
+            'slug'       => $item->product->slug ?? '',
+            'stock'      => $item->product->stock ?? 99,
+            'category'   => $item->product->category?->name ?? 'Jewelry',
         ];
     })->values()->toArray();
     

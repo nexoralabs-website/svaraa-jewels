@@ -4,16 +4,8 @@
     {{-- Image --}}
     <div class="w-24 h-24 bg-gray-50 flex-shrink-0 border border-gray-100">
         <a href="{{ route('products.show', $item->product->slug ?? '#') }}">
-            @php
-                $imagePath = asset('images/placeholder.jpg');
-                if (!empty($item->product->thumbnail)) {
-                    $imagePath = asset('storage/' . $item->product->thumbnail);
-                } elseif (!empty($item->product->images) && $item->product->images->count() > 0) {
-                    $imagePath = asset('storage/' . $item->product->images->first()->image);
-                }
-            @endphp
             <img 
-                src="{{ $imagePath }}" 
+                src="{{ $item->product->thumbnail_url }}" 
                 alt="{{ $item->product->name }}" 
                 class="w-full h-full object-cover object-center"
                 loading="lazy"

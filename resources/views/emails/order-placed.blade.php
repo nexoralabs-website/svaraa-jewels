@@ -109,12 +109,11 @@
                                 <td>
                                     <div class="product-cell">
                                         @php
-                                            $img = asset('images/placeholder.jpg');
-                                            if ($item->product && $item->product->thumbnail) {
-                                                $img = asset('storage/' . $item->product->thumbnail);
-                                            }
+                                            $img = $item->product
+                                                ? $item->product->thumbnail_url
+                                                : asset('images/placeholders/product-coming-soon.svg');
                                         @endphp
-                                        <img src="{{ $img }}" alt="{{ $item->product_name }}" class="product-img" onerror="this.src='{{ asset('images/placeholder.jpg') }}'">
+                                        <img src="{{ $img }}" alt="{{ $item->product_name }}" class="product-img">
                                         <span class="product-name">{{ $item->product_name }}</span>
                                     </div>
                                 </td>

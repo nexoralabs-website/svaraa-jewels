@@ -8,7 +8,7 @@
         @foreach($items as $item)
             <div class="flex gap-4">
                 <div class="w-16 h-16 bg-white border border-gray-100 flex-shrink-0">
-                    <img src="{{ $item->product->thumbnail ? asset('storage/' . $item->product->thumbnail) : asset('images/placeholder.jpg') }}" alt="{{ $item->product->name }}" class="w-full h-full object-cover">
+                    <img src="{{ $item->product->thumbnail_url }}" alt="{{ $item->product->name }}" class="w-full h-full object-cover">
                 </div>
                 <div class="flex-1 flex justify-between">
                     <div>

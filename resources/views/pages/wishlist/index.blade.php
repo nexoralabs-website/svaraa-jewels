@@ -21,7 +21,7 @@
                         <!-- Image -->
                         <div class="relative aspect-square overflow-hidden bg-gray-50">
                             <a href="{{ route('products.show', $item->product) }}">
-                                <img src="{{ $item->product->thumbnail ? asset('storage/' . $item->product->thumbnail) : asset('images/placeholder.jpg') }}" alt="{{ $item->product->name }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
+                                <img src="{{ $item->product->thumbnail_url }}" alt="{{ $item->product->name }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
                             </a>
                             
                             <!-- Remove Button -->

@@ -54,7 +54,7 @@
                             @foreach($order->items as $item)
                                 <div class="py-4 flex gap-6">
                                     <div class="w-20 h-20 bg-gray-50 border border-gray-100 flex-shrink-0">
-                                        <img src="{{ $item->product->thumbnail ? asset('storage/' . $item->product->thumbnail) : asset('images/placeholder.jpg') }}" alt="{{ $item->product->name }}" class="w-full h-full object-cover">
+                                        <img src="{{ $item->product->thumbnail_url }}" alt="{{ $item->product->name }}" class="w-full h-full object-cover">
                                     </div>
                                     <div class="flex-1 flex flex-col justify-between">
                                         <div class="flex justify-between">

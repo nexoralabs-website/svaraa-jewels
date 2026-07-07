@@ -74,7 +74,7 @@
                class="group bg-white rounded-xl border border-[#E8DCCB] overflow-hidden
                       shadow-sm hover:shadow-md hover:border-[#C8A35D]/50 transition-all">
                 <div class="aspect-square overflow-hidden bg-gray-50">
-                    <img src="{{ $product->thumbnail ? asset('storage/'.$product->thumbnail) : asset('images/placeholder.jpg') }}"
+                    <img src="{{ $product->thumbnail_url }}"
                          alt="{{ $product->name }}"
                          class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                          loading="lazy">

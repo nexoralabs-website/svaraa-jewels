@@ -24,12 +24,10 @@
         activeTab: 'description',
         quantity: 1,
         images: [
+            '{{ $product->thumbnail_url }}',
             @foreach($product->images as $img)
-                '{{ Storage::url($img->image) }}',
+                '{{ $img->image_url }}',
             @endforeach
-            @if($product->images->isEmpty())
-                '{{ asset('images/placeholder.jpg') }}'
-            @endif
         ]
     }">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16">

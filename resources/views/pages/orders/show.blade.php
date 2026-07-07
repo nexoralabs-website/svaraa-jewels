@@ -1,4 +1,4 @@
-﻿<x-layouts.app>
+<x-layouts.app>
     <x-slot:title>Order #{{ $order->order_number }} | Svaraa Jewels</x-slot:title>
 
     {{-- Header --}}
@@ -145,12 +145,11 @@
                         <div class="flex items-center py-4 gap-4">
                             <div class="w-20 h-20 bg-gray-50 rounded-lg overflow-hidden border border-gray-100 flex-shrink-0">
                                 @php
-                                    $img = asset('images/placeholder.jpg');
-                                    if ($item->product && $item->product->thumbnail) {
-                                        $img = asset('storage/' . $item->product->thumbnail);
-                                    }
+                                    $img = $item->product
+                                        ? $item->product->thumbnail_url
+                                        : asset('images/placeholders/product-coming-soon.svg');
                                 @endphp
-                                <img src="{{ $img }}" alt="{{ $item->product_name }}" class="w-full h-full object-cover" onerror="this.src='{{ asset('images/placeholder.jpg') }}'">
+                                <img src="{{ $img }}" alt="{{ $item->product_name }}" class="w-full h-full object-cover">
                             </div>
                             <div class="flex-1 min-w-0">
                                 <h4 class="text-sm font-medium text-[#2E1A12] truncate">{{ $item->product_name }}</h4>

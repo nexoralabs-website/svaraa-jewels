@@ -63,7 +63,7 @@
                             <div class="flex gap-2">
                                 @foreach($order->items->take(4) as $item)
                                 <div class="w-12 h-12 rounded-lg border border-[#E8DCCB] overflow-hidden bg-gray-50 flex-shrink-0">
-                                    <img src="{{ $item->product?->thumbnail ? asset('storage/' . $item->product->thumbnail) : asset('images/placeholder.jpg') }}"
+                                     <img src="{{ $item->product?->thumbnail_url ?? asset('images/placeholders/product-coming-soon.svg') }}"
                                          alt="{{ $item->product_name }}"
                                          class="w-full h-full object-cover">
                                 </div>
