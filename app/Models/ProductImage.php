@@ -17,13 +17,20 @@ class ProductImage extends Model
      */
     public function getImageUrlAttribute(): string
     {
-        if ($this->image && Storage::disk('public')->exists($this->image)) {
-            Log::channel('daily')->debug('ProductImage URL resolved', [
-                'path' => $this->image,
-                'exists' => Storage::disk('public')->exists($this->image),
-                'url' => Storage::disk('public')->url($this->image),
+        if ($this->image) {
+            $exists = Storage::disk('public')->exists($this->image);
+            
+            logger()->info('PRODUCT_IMAGE DIAGNOSTICS', [
+                'db_value'   => $this->image,
+                'normalized' => $this->image,
+                'exists'     => $exists,
+                'url'        => Storage::disk('public')->url($this->image),
+                'disk_root'  => Storage::disk('public')->path(''),
             ]);
-            return Storage::disk('public')->url($this->image);
+
+            if ($exists) {
+                return Storage::disk('public')->url($this->image);
+            }
         }
         return asset('images/placeholders/product-coming-soon.svg');
     }

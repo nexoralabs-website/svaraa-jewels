@@ -90,9 +90,12 @@ class Product extends Model
     public function getThumbnailUrlAttribute(): string
     {
         $paths = [];
+        $rawPaths = [];
 
         if (!empty($this->thumbnail)) {
-            $paths[] = preg_replace('#^storage/#', '', $this->thumbnail);
+            $path = preg_replace('#^storage/#', '', $this->thumbnail);
+            $paths[] = $path;
+            $rawPaths[$path] = $this->thumbnail;
         }
 
         $first = $this->images()
@@ -100,22 +103,26 @@ class Product extends Model
             ->first();
 
         if ($first && !empty($first->image)) {
-            $paths[] = preg_replace('#^storage/#', '', $first->image);
+            $path = preg_replace('#^storage/#', '', $first->image);
+            $paths[] = $path;
+            $rawPaths[$path] = $first->image;
         }
 
         foreach ($paths as $path) {
-            if (
-                !empty($path) &&
-                Storage::disk('public')->exists($path)
-            ) {
-                Log::info('THUMBNAIL RESOLVE', [
-                    'product_id' => $this->id,
-                    'resolved' => $path,
-                    'url' => Storage::disk('public')->url($path),
-                    'exists' => true,
+            if (!empty($path)) {
+                $exists = Storage::disk('public')->exists($path);
+                
+                logger()->info('THUMBNAIL DIAGNOSTICS', [
+                    'db_value'   => $rawPaths[$path] ?? null,
+                    'normalized' => $path,
+                    'exists'     => $exists,
+                    'url'        => Storage::disk('public')->url($path),
+                    'disk_root'  => Storage::disk('public')->path(''),
                 ]);
 
-                return Storage::disk('public')->url($path);
+                if ($exists) {
+                    return Storage::disk('public')->url($path);
+                }
             }
         }
 
