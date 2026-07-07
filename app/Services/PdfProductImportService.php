@@ -28,9 +28,10 @@ class PdfProductImportService
 
     // ── Public summary counters ───────────────────────────────────────────
     public int $pagesScanned   = 0;
-    public int $extractedCount  = 0;
-    public int $duplicateCount  = 0;
-    public int $failedCount     = 0;
+    public int $extractedCount = 0;
+    public int $duplicateCount = 0;
+    public int $placeholderCount = 0;
+    public int $failedCount    = 0;
 
     public function __construct(
         private readonly ProductDescriptionService $descService,
@@ -46,6 +47,7 @@ class PdfProductImportService
         $this->pagesScanned = 0;
         $this->extractedCount  = 0;
         $this->duplicateCount  = 0;
+        $this->placeholderCount = 0;
         $this->failedCount     = 0;
 
         $config = new \Smalot\PdfParser\Config();
@@ -145,12 +147,15 @@ class PdfProductImportService
 
             // ── Fallback: render page to image if no embedded images ───────
             $fromEmbedded = true;
+            $isPlaceholder = false;
             if (empty($pageImages)) {
                 Log::info('FALLBACK RENDER USED', ['page'=>$pageNumber]);
                 $fallbackBytes = $this->generateFallbackPageImageBytes();
                 if ($fallbackBytes) {
                     $pageImages[] = ['bytes'=>$fallbackBytes, 'ext'=>'jpg'];
                     $fromEmbedded = false;
+                    $isPlaceholder = true;
+                    $this->placeholderCount++;
                 }
             }
 
@@ -191,7 +196,7 @@ class PdfProductImportService
                     fromEmbedded: $fromEmbedded,
                     sha256:      hash('sha256', $bytes),
                     pdfBaseName:  $safeName,
-                    isPlaceholder: false,
+                    isPlaceholder: $isPlaceholder,
                 );
                 $this->extractedCount++;
                 $uniqueOnPage++;
