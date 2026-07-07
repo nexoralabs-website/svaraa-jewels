@@ -31,7 +31,7 @@ class ProductsTable
                 ImageColumn::make('thumbnail')
                     ->disk('public')
                     ->square()
-                    ->defaultImageUrl(asset('images/placeholder.svg')),
+                    ->defaultImageUrl(asset('images/placeholders/product-coming-soon.svg')),
                 ToggleColumn::make('status'),
                 TextColumn::make('created_at')
                     ->dateTime()

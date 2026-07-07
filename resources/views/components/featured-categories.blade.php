@@ -2,7 +2,7 @@
     <div class="container mx-auto px-4">
         <!-- Signature Collection Section -->
         <div class="mt-0">
-            <div class="section-reveal mb-12 text-center">
+            <div class="mb-12 text-center" data-aos="fade-up">
                 <p class="text-sm font-semibold uppercase tracking-[0.35em] text-[#C8A35D]">Signature Collection</p>
                 <h2 class="mt-4 text-3xl font-semibold text-[#2E1A12] md:text-4xl" style="font-family: 'Playfair Display', serif;">
                     Our Most Cherished Earrings
@@ -17,7 +17,7 @@
                 ])
 
                 @foreach($signaturePieces as $piece)
-                    <div class="signature-card {{ $piece['colSpan'] }} {{ $piece['rowSpan'] }} p-6 jewelry-detail" style="animation-delay: {{ $loop->index * 150 }}ms;">
+                    <div class="signature-card {{ $piece['colSpan'] }} {{ $piece['rowSpan'] }} p-6 jewelry-detail" data-aos="fade-up" data-aos-delay="{{ $loop->index * 100 }}">
                         <div class="absolute top-4 right-4">
                             <span class="rounded-full bg-[#F5EBDD] px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-[#6E0F12]">{{ $piece['tag'] }}</span>
                         </div>
@@ -48,7 +48,7 @@
 
         <!-- Best Sellers & Brand Story -->
         <div class="mt-24 grid gap-8 lg:grid-cols-[1.05fr_0.95fr]">
-            <div class="section-shell section-reveal p-8 md:p-10">
+            <div class="section-shell p-8 md:p-10" data-aos="fade-up">
                 <p class="text-sm font-semibold uppercase tracking-[0.35em] text-[#C8A35D]">Best sellers</p>
                 <h3 class="mt-3 text-3xl font-semibold text-[#2E1A12]" style="font-family: 'Playfair Display', serif;">Designed for everyday shine and easy gifting.</h3>
                 <div class="no-scrollbar mt-8 flex gap-5 overflow-x-auto pb-2">
@@ -58,7 +58,7 @@
                         ['name' => 'Hoops Deluxe', 'price' => '₹18,500', 'note' => 'Polished gold', 'badge' => 'Popular'],
                     ])
                     @foreach($featured as $piece)
-                        <div class="product-card card-tilt group min-w-[260px] max-w-[260px] rounded-[1.5rem] border border-[#e8dccb] bg-[#fffdf9] p-5 shadow-sm product-premium" style="animation-delay: {{ $loop->index * 120 }}ms;">
+                        <div class="product-card card-tilt group min-w-[260px] max-w-[260px] rounded-[1.5rem] border border-[#e8dccb] bg-[#fffdf9] p-5 shadow-sm product-premium" data-aos="zoom-in" data-aos-delay="{{ $loop->index * 100 }}">
                             <div class="flex items-center justify-between">
                                 <span class="rounded-full bg-[#F5EBDD] px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-[#6E0F12]">{{ $piece['badge'] }}</span>
                                 <span class="text-sm font-semibold text-[#C8A35D]">★ 4.9</span>
@@ -85,7 +85,7 @@
             </div>
 
             <div class="grid gap-6">
-                <div class="section-shell section-reveal p-8 md:p-10">
+                <div class="section-shell p-8 md:p-10" data-aos="fade-up" data-aos-delay="100">
                     <p class="text-sm font-semibold uppercase tracking-[0.35em] text-[#C8A35D]">Brand story</p>
                     <h3 class="mt-3 text-3xl font-semibold text-[#2E1A12]" style="font-family: 'Playfair Display', serif;">Simple pieces made to feel personal and lasting.</h3>
                     <p class="mt-4 text-lg leading-8 text-[#7B6755]">We design jewelry that balances modern shape with a soft, comfortable finish so it works beautifully from day to evening.</p>
@@ -95,7 +95,7 @@
                     </div>
                 </div>
 
-                <div class="section-shell section-reveal p-8 md:p-10">
+                <div class="section-shell p-8 md:p-10" data-aos="fade-up" data-aos-delay="200">
                     <p class="text-sm font-semibold uppercase tracking-[0.35em] text-[#C8A35D]">Customer love</p>
                     <div class="mt-4 rounded-[1.25rem] border border-[#e8dccb] bg-[#fffdf9] p-6 shadow-sm">
                         <p class="text-lg leading-8 text-[#7B6755]">“The finish feels effortless and the styling is so simple. It looks beautiful whether I wear it all day or for dinner.”</p>
@@ -110,7 +110,7 @@
 
         <!-- Instagram Section -->
         <div class="mt-24">
-            <div class="section-reveal mb-12 text-center">
+            <div class="mb-12 text-center" data-aos="fade-up">
                 <p class="text-sm font-semibold uppercase tracking-[0.35em] text-[#C8A35D]">@svaraa.jewels_</p>
                 <h2 class="mt-4 text-3xl font-semibold text-[#2E1A12] md:text-4xl" style="font-family: 'Playfair Display', serif;">
                     Join Our Community
@@ -122,7 +122,7 @@
 
             <div class="instagram-grid">
                 @for($i = 1; $i <= 8; $i++)
-                    <a href="https://instagram.com/svaraa.jewels_" target="_blank" class="instagram-item" style="animation-delay: {{ ($i - 1) * 80 }}ms;">
+                    <a href="https://instagram.com/svaraa.jewels_" target="_blank" class="instagram-item" data-aos="zoom-in-up" data-aos-delay="{{ ($i - 1) * 50 }}">
                         <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#F5EBDD] to-[#d8bf8c]">
                             <span class="text-[#6E0F12] text-4xl">✦</span>
                         </div>

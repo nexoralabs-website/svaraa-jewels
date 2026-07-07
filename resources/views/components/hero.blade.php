@@ -38,7 +38,7 @@
                         <div class="mt-1 text-sm text-[#7B6755]">Loved by clients</div>
                     </div>
                     <div class="rounded-2xl border border-[#e8dccb] bg-white/80 p-4 shadow-sm luxury-stats">
-                        <div class="text-2xl font-semibold text-[#6E0F12]" style="font-family: 'Playfair Display', serif;">48h</div>
+                        <div class="text-2xl font-semibold text-[#6E0F12]" style="font-family: 'Playfair Display', serif;">24h</div>
                         <div class="mt-1 text-sm text-[#7B6755]">Fast dispatch</div>
                     </div>
                     <div class="rounded-2xl border border-[#e8dccb] bg-white/80 p-4 shadow-sm luxury-stats">

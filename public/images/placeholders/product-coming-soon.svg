@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800">
+    <defs>
+        <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#fff8ef" />
+            <stop offset="100%" stop-color="#ebd8b8" />
+        </linearGradient>
+        <style>
+            .text-main { font-family: 'Playfair Display', serif; font-size: 36px; font-weight: 600; fill: #6E0F12; text-anchor: middle; letter-spacing: 0.02em; }
+            .icon { stroke: #C8A35D; stroke-width: 1.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+        </style>
+    </defs>
+    <!-- Background -->
+    <rect width="800" height="800" fill="url(#bgGrad)" />
+    
+    <!-- Decorative border -->
+    <rect x="30" y="30" width="740" height="740" fill="none" stroke="#e8dccb" stroke-width="2" rx="24" />
+    <rect x="40" y="40" width="720" height="720" fill="none" stroke="#ffffff" stroke-width="1" stroke-opacity="0.5" rx="16" />
+    
+    <!-- Group centered -->
+    <g transform="translate(400, 380)">
+        <!-- Gift Icon (24x24 path scaled x4 -> 96x96) -->
+        <path class="icon" transform="translate(-48, -70) scale(4)" d="M21 11.25v8.25a1.5 1.5 0 01-1.5 1.5H5.25a1.5 1.5 0 01-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 109.375 7.5H12m0-2.625V7.5m0-2.625A2.625 2.625 0 1114.625 7.5H12m0 0V21m-8.625-9.75h18c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125h-18c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
+        
+        <text y="70" class="text-main">Product Coming Soon</text>
+    </g>
+</svg>

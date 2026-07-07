@@ -125,7 +125,7 @@ class Product extends Model
             'image' => $first?->image,
         ]);
 
-        return asset('images/placeholders/product.svg');
+        return asset('images/placeholders/product-coming-soon.svg');
     }
 
     /**
