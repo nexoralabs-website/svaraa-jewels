@@ -369,6 +369,27 @@ class PdfProductImportService
         ];
     }
 
+    private function generateProductName(string $rawText, int $pageNumber): string
+    {
+        $lines = explode("\n", str_replace(["\r\n", "\r"], "\n", $rawText));
+
+        foreach ($lines as $line) {
+            $line = trim(preg_replace('/\s+/', ' ', $line));
+
+            if ($line === '') {
+                continue;
+            }
+
+            if (preg_match('/\b(price|mrp|rs\.?|inr|page|gst|invoice|barcode|qr|sku|hsn|weight|quantity|qty|pdf)\b|₹/i', $line)) {
+                continue;
+            }
+
+            return mb_substr($line, 0, 80);
+        }
+
+        return "Product Page {$pageNumber}";
+    }
+
     private function guardFile(string $path): void
     {
         if (! file_exists($path)) {
