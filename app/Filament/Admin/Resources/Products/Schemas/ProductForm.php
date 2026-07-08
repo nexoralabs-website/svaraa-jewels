@@ -87,7 +87,7 @@ class ProductForm
                 FileUpload::make('thumbnail')
                     ->label('Product Image')
                     ->image()
-                    ->disk('public')
+                    ->disk(config('filesystems.disks.public.driver') === 's3' ? 'public' : 'public')
                     ->directory('products')
                     ->visibility('public')
                     ->fetchFileInformation(false)

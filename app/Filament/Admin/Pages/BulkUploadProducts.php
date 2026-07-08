@@ -251,7 +251,7 @@ class BulkUploadProducts extends Page implements HasForms
 
             $newRows[] = $this->buildRow(
                 storedPath:       $relativePath,
-                previewUrl:       '/storage/' . ltrim($relativePath, '/'),
+                previewUrl:       Storage::disk('public')->url($relativePath),
                 name:             $productName,
                 categoryId:       $categoryId,
                 categoryOpts:     $categoryOpts,

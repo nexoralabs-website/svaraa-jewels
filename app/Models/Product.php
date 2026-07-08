@@ -89,15 +89,10 @@ class Product extends Model
 
     public function getThumbnailUrlAttribute(): string
     {
-        Log::error('PRODUCT THUMBNAIL DIAGNOSTICS START', [
-            'product_id' => $this->id,
-            'thumbnail' => $this->thumbnail,
-        ]);
-
         $paths = [];
         $rawPaths = [];
 
-        if (!empty($this->thumbnail)) {
+        if (! empty($this->thumbnail)) {
             $path = preg_replace('#^storage/#', '', $this->thumbnail);
             $paths[] = $path;
             $rawPaths[$path] = $this->thumbnail;
@@ -107,50 +102,21 @@ class Product extends Model
             ->orderBy('id')
             ->first();
 
-        if ($first && !empty($first->image)) {
+        if ($first && ! empty($first->image)) {
             $path = preg_replace('#^storage/#', '', $first->image);
             $paths[] = $path;
             $rawPaths[$path] = $first->image;
         }
 
         foreach ($paths as $path) {
-            if (!empty($path)) {
-                $exists = Storage::disk('public')->exists($path);
-                $diskPath = Storage::disk('public')->path($path);
-                $publicStorage = public_path('storage');
-                
-                Log::error('THUMBNAIL PATH CHECK', [
-                    'db_value'      => $rawPaths[$path] ?? null,
-                    'normalized'    => $path,
-                    'exists_method' => $exists,
-                    'url'           => Storage::disk('public')->url($path),
-                    'disk_path'     => $diskPath,
-                    'realpath'      => realpath($diskPath),
-                    'file_exists'   => file_exists($diskPath),
-                    'is_link'       => is_link($publicStorage),
-                    'readlink'      => is_link($publicStorage) ? @readlink($publicStorage) : null,
-                    'files_list'    => Storage::disk('public')->files('products'),
-                    'all_files_list'=> Storage::disk('public')->allFiles('products'),
-                ]);
-
-                if ($exists) {
-                    $url = Storage::disk('public')->url($path);
-                    Log::error('PRODUCT THUMBNAIL FOUND', ['url' => $url, 'path' => $path]);
-                    return $url;
+            if (! empty($path)) {
+                if (Storage::disk('public')->exists($path)) {
+                    return Storage::disk('public')->url($path);
                 }
             }
         }
 
-        Log::error('PRODUCT THUMBNAIL MISSING', [
-            'product_id' => $this->id,
-            'thumbnail' => $this->thumbnail,
-            'first_image' => $first?->image,
-            'images_count' => $this->images()->count(),
-        ]);
-
-        $placeholder = asset('images/placeholders/product-coming-soon.svg');
-        Log::error('PRODUCT THUMBNAIL FALLBACK TO PLACEHOLDER', ['placeholder' => $placeholder]);
-        return $placeholder;
+        return asset('images/placeholders/product-coming-soon.svg');
     }
 
     /**
