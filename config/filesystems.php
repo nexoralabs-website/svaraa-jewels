@@ -38,27 +38,27 @@ return [
             'report' => false,
         ],
 
-        'public' =&gt; env('FILESYSTEM_PUBLIC_DISK', 'local') === 's3'
+        'public' => env('FILESYSTEM_PUBLIC_DISK', 'local') === 's3'
             ? [
-                'driver' =&gt; 's3',
-                'key' =&gt; env('SUPABASE_ACCESS_KEY_ID'),
-                'secret' =&gt; env('SUPABASE_SECRET_ACCESS_KEY'),
-                'region' =&gt; env('SUPABASE_REGION', 'us-east-1'),
-                'bucket' =&gt; env('SUPABASE_BUCKET'),
-                'url' =&gt; env('SUPABASE_URL'),
-                'endpoint' =&gt; env('SUPABASE_ENDPOINT'),
-                'use_path_style_endpoint' =&gt; env('SUPABASE_USE_PATH_STYLE_ENDPOINT', true),
-                'visibility' =&gt; 'public',
-                'throw' =&gt; false,
-                'report' =&gt; false,
+                'driver' => 's3',
+                'key' => env('SUPABASE_ACCESS_KEY_ID'),
+                'secret' => env('SUPABASE_SECRET_ACCESS_KEY'),
+                'region' => env('SUPABASE_REGION', 'us-east-1'),
+                'bucket' => env('SUPABASE_BUCKET'),
+                'url' => env('SUPABASE_URL'),
+                'endpoint' => env('SUPABASE_ENDPOINT'),
+                'use_path_style_endpoint' => env('SUPABASE_USE_PATH_STYLE_ENDPOINT', true),
+                'visibility' => 'public',
+                'throw' => false,
+                'report' => false,
             ]
             : [
-                'driver' =&gt; 'local',
-                'root' =&gt; storage_path('app/public'),
-                'url' =&gt; env('APP_URL').'/storage',
-                'visibility' =&gt; 'public',
-                'throw' =&gt; false,
-                'report' =&gt; false,
+                'driver' => 'local',
+                'root' => storage_path('app/public'),
+                'url' => env('APP_URL').'/storage',
+                'visibility' => 'public',
+                'throw' => false,
+                'report' => false,
             ],
 
         's3' => [

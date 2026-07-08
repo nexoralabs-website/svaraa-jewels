@@ -33,14 +33,26 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Log all unhandled exceptions with context
         $exceptions->report(function (\Throwable $e) {
-            Log::error('unhandled_exception', [
+            $context = [
                 'class'   => get_class($e),
                 'message' => $e->getMessage(),
                 'file'    => $e->getFile(),
                 'line'    => $e->getLine(),
-                'url'     => request()->fullUrl(),
-                'user'    => auth()->id(),
-            ]);
+            ];
+
+            try {
+                if (app()->bound('log') && !app()->runningInConsole()) {
+                    if (app()->bound('request')) {
+                        $context['url'] = request()->fullUrl();
+                    }
+                    if (app()->bound('auth')) {
+                        $context['user'] = auth()->id();
+                    }
+                    Log::error('unhandled_exception', $context);
+                }
+            } catch (\Throwable $t) {
+                // Do nothing - fail silently if logging isn't ready yet
+            }
         });
 
         // Return JSON for AJAX/API requests on HTTP errors
