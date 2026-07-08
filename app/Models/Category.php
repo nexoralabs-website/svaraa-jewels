@@ -31,4 +31,16 @@ class Category extends Model
         return $this->meta_description
             ?: 'Shop our exclusive ' . $this->name . ' collection at Svaraa Jewels. Handcrafted luxury jewellery for every occasion.';
     }
+
+    public function getImageUrlAttribute(): string
+    {
+        if (! empty($this->image)) {
+            $path = preg_replace('#^storage/#', '', $this->image);
+            if (\Illuminate\Support\Facades\Storage::disk('public')->exists($path)) {
+                return \Illuminate\Support\Facades\Storage::disk('public')->url($path);
+            }
+        }
+
+        return asset('images/placeholders/category-coming-soon.svg');
+    }
 }
