@@ -40,65 +40,23 @@ Route::get('/storage-debug', function () {
     ]);
 });
 
-// SUPER DETAILED STORAGE DEBUG ROUTE - REMOVE AFTER DEBUGGING
-Route::get('/storage-debug-detailed', function () {
-    // Get product for test file
-    $product = App\Models\Product::whereNotNull('thumbnail')->first();
-    $testFile = $product ? $product->thumbnail : 'products/test.jpg';
-    $testFileStripped = $product ? preg_replace('#^storage/#', '', $product->thumbnail) : 'products/test.jpg';
-
+// NEW STORAGE RUNTIME DEBUG ROUTE - REMOVE AFTER DEBUGGING
+Route::get('/storage-runtime-debug', function () {
     $disk = Illuminate\Support\Facades\Storage::disk('public');
-    $laravelAdapter = $disk->getAdapter();
-    $flysystemAdapter = $laravelAdapter->getAdapter(); // Get underlying Flysystem adapter
-
-    // Helper function to get properties via reflection
-    $getProperties = function ($object, $depth = 0) use (&$getProperties) {
-        if (! is_object($object)) {
-            return $object;
-        }
-        
-        $reflection = new ReflectionClass($object);
-        $props = [];
-        
-        foreach ($reflection->getProperties() as $property) {
-            $property->setAccessible(true);
-            $name = $property->getName();
-            $value = $property->getValue($object);
-            
-            // Recurse for nested objects, but limit depth to avoid infinite loops
-            if (is_object($value) && $depth < 5) {
-                $props[$name] = [
-                    'class' => get_class($value),
-                    'properties' => $getProperties($value, $depth + 1)
-                ];
-            } else {
-                $props[$name] = $value;
-            }
-        }
-        
-        return $props;
-    };
-
-    $configCached = file_exists(base_path('bootstrap/cache/config.php'));
-    $configLoaded = $configCached;
-
+    $adapter = $disk->getAdapter();
+    
+    $diskConfig = method_exists($disk, 'getConfig') ? $disk->getConfig() : 'method_not_available';
+    
     return response()->json([
-        '1.filesystems.default' => config('filesystems.default'),
-        '2.filesystems.disks.public' => config('filesystems.disks.public'),
-        '3.laravel_adapter_class' => get_class($laravelAdapter),
-        '4.flysystem_adapter_class' => get_class($flysystemAdapter),
-        '5.laravel_adapter_properties' => $getProperties($laravelAdapter),
-        '6.flysystem_adapter_properties' => $getProperties($flysystemAdapter),
-        '7.public_disk_config_full' => config('filesystems.disks.public'),
-        '8.config_cached' => $configCached,
-        '9.config_cached_file_exists' => $configCached,
-        '10.test_file_path_raw' => $testFile,
-        '11.test_file_path_stripped' => $testFileStripped,
-        '12.url_from_raw_path' => $disk->url($testFile),
-        '13.url_from_stripped_path' => $disk->url($testFileStripped),
-        '14.exists_from_raw_path' => $disk->exists($testFile),
-        '15.exists_from_stripped_path' => $disk->exists($testFileStripped),
-        '16.all_files_in_products' => $disk->files('products'),
+        'driver' => config('filesystems.disks.public.driver'),
+        'default_disk' => config('filesystems.default'),
+        'public_disk' => config('filesystems.disks.public'),
+        'config_cached' => app()->configurationIsCached(),
+        'adapter_class' => get_class($adapter),
+        'url_products_test' => $disk->url('products/test.jpg'),
+        'exists_products_test' => $disk->exists('products/test.jpg'),
+        'files_products' => $disk->files('products'),
+        'disk_config_runtime' => $diskConfig,
     ]);
 });
 
