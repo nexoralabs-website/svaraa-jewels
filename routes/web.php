@@ -40,25 +40,92 @@ Route::get('/storage-debug', function () {
     ]);
 });
 
-// NEW STORAGE RUNTIME DEBUG ROUTE - REMOVE AFTER DEBUGGING
-Route::get('/storage-runtime-debug', function () {
+// TEMPORARY OBJECT KEY MISMATCH DEBUG ROUTE - REMOVE AFTER DEBUGGING
+Route::get('/storage-keys-debug', function () {
     $disk = Illuminate\Support\Facades\Storage::disk('public');
-    $adapter = $disk->getAdapter();
     
-    $diskConfig = method_exists($disk, 'getConfig') ? $disk->getConfig() : 'method_not_available';
-    
-    return response()->json([
-        'driver' => config('filesystems.disks.public.driver'),
-        'default_disk' => config('filesystems.default'),
-        'public_disk' => config('filesystems.disks.public'),
-        'config_cached' => app()->configurationIsCached(),
-        'adapter_class' => get_class($adapter),
-        'url_products_test' => $disk->url('products/test.jpg'),
-        'exists_products_test' => $disk->exists('products/test.jpg'),
-        'files_products' => $disk->files('products'),
-        'disk_config_runtime' => $diskConfig,
-    ]);
-});
+    $output = [
+        'first_product' => null,
+        'first_product_image' => null,
+        'product_thumbnail_details' => null,
+        'product_image_details' => null,
+        'all_files' => [
+            'root' => $disk->allFiles('/'),
+            'products' => $disk->allFiles('products')
+        ],
+        'directories' => $disk->directories('/'),
+        'exists_checks' => [
+            'products' => $disk->exists('products'),
+            '/products' => $disk->exists('/products')
+        ],
+        'files_checks' => [
+            'root' => $disk->files('/'),
+            'empty' => $disk->files(''),
+            'products' => $disk->files('products')
+        ],
+        'test_url' => $disk->url('products/test.jpg'),
+        'disk_config' => config('filesystems.disks.public'),
+        'disk_config_runtime' => method_exists($disk, 'getConfig') ? $disk->getConfig() : 'method_not_available'
+    ];
+
+    try {
+        $product = \App\Models\Product::first();
+        if ($product) {
+            $output['first_product'] = [
+                'id' => $product->id,
+                'thumbnail' => $product->thumbnail
+            ];
+            
+            $trimmedThumbnail = trim($product->thumbnail);
+            $output['product_thumbnail_details'] = [
+                'raw' => $product->thumbnail,
+                'trimmed' => $trimmedThumbnail,
+                'url_raw' => $disk->url($product->thumbnail),
+                'url_trimmed' => $disk->url($trimmedThumbnail),
+                'exists_raw' => $disk->exists($product->thumbnail),
+                'exists_trimmed' => $disk->exists($trimmedThumbnail)
+            ];
+            
+            $output['thumbnail_test_url'] = $disk->url($product->thumbnail);
+            $output['trimmed_thumbnail_test_url'] = $disk->url($trimmedThumbnail);
+        }
+    } catch (\Exception $e) {
+        $output['first_product_error'] = $e->getMessage();
+        $output['first_product_trace'] = $e->getTraceAsString();
+    }
+
+    try {
+        $productImage = \App\Models\ProductImage::first();
+        if ($productImage) {
+            $output['first_product_image'] = [
+                'id' => $productImage->id,
+                'image' => $productImage->image
+            ];
+            
+            $trimmedImage = trim($productImage->image);
+            $output['product_image_details'] = [
+                'raw' => $productImage->image,
+                'trimmed' => $trimmedImage,
+                'url_raw' => $disk->url($productImage->image),
+                'url_trimmed' => $disk->url($trimmedImage),
+                'exists_raw' => $disk->exists($productImage->image),
+                'exists_trimmed' => $disk->exists($trimmedImage)
+            ];
+        }
+    } catch (\Exception $e) {
+        $output['first_product_image_error'] = $e->getMessage();
+        $output['first_product_image_trace'] = $e->getTraceAsString();
+    }
+
+    return response()->json($output);
+})->withoutMiddleware([
+    \Illuminate\Session\Middleware\StartSession::class,
+    \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
+    \Illuminate\Cookie\Middleware\EncryptCookies::class,
+    \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+    \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class,
+    \Illuminate\Routing\Middleware\SubstituteBindings::class,
+]);
 
 // SEO
 Route::get('/sitemap.xml', [SeoController::class, 'sitemap'])->name('seo.sitemap');
