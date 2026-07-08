@@ -89,6 +89,11 @@ class Product extends Model
 
     public function getThumbnailUrlAttribute(): string
     {
+        Log::error('PRODUCT THUMBNAIL DIAGNOSTICS START', [
+            'product_id' => $this->id,
+            'thumbnail' => $this->thumbnail,
+        ]);
+
         $paths = [];
         $rawPaths = [];
 
@@ -114,7 +119,7 @@ class Product extends Model
                 $diskPath = Storage::disk('public')->path($path);
                 $publicStorage = public_path('storage');
                 
-                logger()->info('THUMBNAIL DIAGNOSTICS', [
+                Log::error('THUMBNAIL PATH CHECK', [
                     'db_value'      => $rawPaths[$path] ?? null,
                     'normalized'    => $path,
                     'exists_method' => $exists,
@@ -129,18 +134,23 @@ class Product extends Model
                 ]);
 
                 if ($exists) {
-                    return Storage::disk('public')->url($path);
+                    $url = Storage::disk('public')->url($path);
+                    Log::error('PRODUCT THUMBNAIL FOUND', ['url' => $url, 'path' => $path]);
+                    return $url;
                 }
             }
         }
 
-        Log::warning('THUMBNAIL MISSING', [
+        Log::error('PRODUCT THUMBNAIL MISSING', [
             'product_id' => $this->id,
             'thumbnail' => $this->thumbnail,
-            'image' => $first?->image,
+            'first_image' => $first?->image,
+            'images_count' => $this->images()->count(),
         ]);
 
-        return asset('images/placeholders/product-coming-soon.svg');
+        $placeholder = asset('images/placeholders/product-coming-soon.svg');
+        Log::error('PRODUCT THUMBNAIL FALLBACK TO PLACEHOLDER', ['placeholder' => $placeholder]);
+        return $placeholder;
     }
 
     /**
