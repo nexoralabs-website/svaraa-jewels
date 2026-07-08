@@ -37,14 +37,87 @@ Route::get('/about', function () {
     return view('pages.static.about');
 })->name('about');
 
-// Debug route - remove after debugging
-Route::get('/debug/storage', function () {
-    return [
-        'public_exists'=>Storage::disk('public')->exists('products'),
-        'files'=>Storage::disk('public')->allFiles('products'),
-        'url'=>Storage::url('products'),
-    ];
-})->middleware('auth');
+// Temporary debug route for storage issue - REMOVE AFTER DEBUGGING
+Route::get('/debug-storage', function () {
+    try {
+        $data = [];
+
+        // Product thumbnail diagnostics
+        try {
+            $product = \App\Models\Product::whereNotNull('thumbnail')->first();
+            $data['product'] = [
+                'id' => $product?->id,
+                'thumbnail_db' => $product?->thumbnail,
+            ];
+
+            if ($product) {
+                $normalizedPath = preg_replace('#^storage/#', '', $product->thumbnail);
+                $data['product']['normalized_path'] = $normalizedPath;
+                $data['product']['storage_public_path'] = Storage::disk('public')->path($normalizedPath);
+                $data['product']['storage_exists'] = Storage::disk('public')->exists($normalizedPath);
+                $data['product']['file_exists'] = file_exists(Storage::disk('public')->path($normalizedPath));
+                $data['product']['realpath'] = realpath(Storage::disk('public')->path($normalizedPath));
+            }
+        } catch (\Exception $e) {
+            $data['product_error'] = $e->getMessage();
+        }
+
+        // Storage files
+        try {
+            $data['storage_products_files'] = Storage::disk('public')->files('products');
+            $data['storage_products_all_files'] = Storage::disk('public')->allFiles('products');
+        } catch (\Exception $e) {
+            $data['storage_files_error'] = $e->getMessage();
+        }
+
+        // Public storage symlink
+        try {
+            $data['public_storage_path'] = public_path('storage');
+            $data['public_storage_is_link'] = is_link(public_path('storage'));
+            $data['public_storage_readlink'] = is_link(public_path('storage')) ? @readlink(public_path('storage')) : null;
+            $data['storage_app_public_path'] = storage_path('app/public');
+        } catch (\Exception $e) {
+            $data['symlink_error'] = $e->getMessage();
+        }
+
+        // Config and env
+        try {
+            $data['config_filesystems_default'] = config('filesystems.default');
+            $data['config_filesystems_public_root'] = config('filesystems.disks.public.root');
+            $data['config_filesystems_public_url'] = config('filesystems.disks.public.url');
+            $data['app_env'] = config('app.env');
+            $data['app_url'] = config('app.url');
+        } catch (\Exception $e) {
+            $data['config_error'] = $e->getMessage();
+        }
+
+        // ProductImage diagnostics
+        try {
+            $productImage = \App\Models\ProductImage::first();
+            $data['product_image'] = [
+                'image_db' => $productImage?->image,
+            ];
+            if ($productImage) {
+                $normalizedImagePath = preg_replace('#^storage/#', '', $productImage->image);
+                $data['product_image']['normalized_path'] = $normalizedImagePath;
+                $data['product_image']['storage_public_path'] = Storage::disk('public')->path($normalizedImagePath);
+                $data['product_image']['storage_exists'] = Storage::disk('public')->exists($normalizedImagePath);
+                $data['product_image']['realpath'] = realpath(Storage::disk('public')->path($normalizedImagePath));
+            }
+        } catch (\Exception $e) {
+            $data['product_image_error'] = $e->getMessage();
+        }
+
+        return response()->json($data, 200);
+    } catch (\Exception $e) {
+        return response()->json([
+            'fatal_error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+        ], 200);
+    }
+});
+
+// Old debug route
 
 Route::get('/contact', function () {
     return view('pages.static.contact');
