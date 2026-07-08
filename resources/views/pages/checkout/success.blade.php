@@ -1,4 +1,4 @@
-﻿<x-layouts.app>
+﻿﻿<x-layouts.app>
     <x-slot:title>Order Success | Svaraa Jewels</x-slot:title>
 
     <div class="bg-[#FFFFF0] min-h-[70vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">

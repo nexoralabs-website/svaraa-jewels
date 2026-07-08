@@ -37,10 +37,8 @@ class PdfProductImportService
         private readonly ProductDescriptionService $descService,
     ) {}
 
-    public function extractCandidates(string $absolutePdfPath, string $pdfStoredPath): array
+    public function extractCandidates(string $pdfStoredPath): array
     {
-        $this->guardFile($absolutePdfPath);
-
         $this->seenSha      = [];
         $this->seenPHashes  = [];
         $this->seenColors   = [];
@@ -50,6 +48,19 @@ class PdfProductImportService
         $this->placeholderCount = 0;
         $this->failedCount     = 0;
 
+        // Get PDF content from storage
+        $pdfContent = Storage::disk('public')->get($pdfStoredPath);
+        if ($pdfContent === null) {
+            throw new \RuntimeException("PDF file not found: {$pdfStoredPath}");
+        }
+
+        // Create temporary file for parsing
+        $tempPdfPath = tempnam(sys_get_temp_dir(), 'pdf_import_');
+        if ($tempPdfPath === false) {
+            throw new \RuntimeException('Could not create temporary file for PDF import');
+        }
+        file_put_contents($tempPdfPath, $pdfContent);
+
         $config = new \Smalot\PdfParser\Config();
         $config->setFontSpaceLimit(-50);
         $config->setRetainImageContent(true);
@@ -57,18 +68,21 @@ class PdfProductImportService
         $parser = new PdfParser([], $config);
 
         try {
-            $pdf = $parser->parseFile($absolutePdfPath);
+            $pdf = $parser->parseFile($tempPdfPath);
         } catch (\Exception $e) {
+            unlink($tempPdfPath);
             throw new \RuntimeException('Could not parse PDF: ' . $e->getMessage(), 0, $e);
         }
 
         $details = $pdf->getDetails();
         if (! empty($details['Encrypt'])) {
+            unlink($tempPdfPath);
             throw new \RuntimeException('Encrypted PDFs are not supported.');
         }
 
         $pages = $pdf->getPages();
         if (count($pages) === 0) {
+            unlink($tempPdfPath);
             throw new \RuntimeException('The PDF contains no pages.');
         }
 
@@ -176,14 +190,14 @@ class PdfProductImportService
 
                 // Verify immediately
                 if (!Storage::disk('public')->exists($filename)) {
+                    unlink($tempPdfPath);
                     throw new \RuntimeException("Image written but file missing: {$filename}");
                 }
 
                 Log::info('IMAGE SAVED', [
                     'stored_path'=>$filename,
                     'exists'=>Storage::disk('public')->exists($filename),
-                    'absolute'=>Storage::disk('public')->path($filename),
-                    'url'=>Storage::url($filename),
+                    'url'=>Storage::disk('public')->url($filename),
                     'size'=>Storage::disk('public')->size($filename),
                 ]);
 
@@ -202,6 +216,9 @@ class PdfProductImportService
                 $uniqueOnPage++;
             }
         }
+
+        // Clean up temporary file
+        unlink($tempPdfPath);
 
         Log::info('PDF IMPORT COMPLETE', ['count'=>count($candidates), 'paths'=>array_column($candidates, 'stored_path')]);
 
@@ -359,7 +376,7 @@ class PdfProductImportService
     ): array {
         return [
             'stored_path'      => $storedPath,
-            'preview_url'      => '/storage/' . ltrim($storedPath, '/'),
+            'preview_url'      => Storage::disk('public')->url($storedPath),
             'name'             => $name,
             'price'            => $price,
             'source'           => 'pdf',

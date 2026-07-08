@@ -300,7 +300,6 @@ class BulkUploadProducts extends Page implements HasForms
 
         foreach (array_values($paths) as $file) {
             try {
-                $absPath      = $this->resolveRealPath($file);
                 $relativePath = $this->resolveStoredPath($file);
             } catch (\RuntimeException $e) {
                 $errors[] = (is_string($file) ? basename($file) : 'upload') . ': ' . $e->getMessage();
@@ -308,10 +307,10 @@ class BulkUploadProducts extends Page implements HasForms
             }
 
             try {
-                $this->progressMessage = 'Extracting: ' . basename($absPath) . '…';
-                $candidates = $pdfService->extractCandidates($absPath, $relativePath);
+                $this->progressMessage = 'Extracting: ' . basename($relativePath) . '…';
+                $candidates = $pdfService->extractCandidates($relativePath);
             } catch (\RuntimeException $e) {
-                $errors[] = basename($absPath) . ': ' . $e->getMessage();
+                $errors[] = basename($relativePath) . ': ' . $e->getMessage();
                 continue;
             }
 

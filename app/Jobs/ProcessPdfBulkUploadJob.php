@@ -113,13 +113,11 @@ class ProcessPdfBulkUploadJob implements ShouldQueue, ShouldBeUnique
 
         // ── 4. Real PDF extraction — create one preview per page with actual images ──
         try {
-            $absPath = Storage::disk('public')->path($this->filePath);
-
-            if (! file_exists($absPath)) {
-                throw new \RuntimeException("PDF file not found at absolute path: {$absPath}");
+            if (! Storage::disk('public')->exists($this->filePath)) {
+                throw new \RuntimeException("PDF file not found: {$this->filePath}");
             }
 
-            $candidates = $pdfService->extractCandidates($absPath, $this->filePath);
+            $candidates = $pdfService->extractCandidates($this->filePath);
 
             Log::info('EXTRACTION RESULT', [
                 'count'=>count($candidates),
