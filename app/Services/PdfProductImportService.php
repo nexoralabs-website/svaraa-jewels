@@ -14,7 +14,7 @@ use Smalot\PdfParser\Parser as PdfParser;
  */
 class PdfProductImportService
 {
-    // ── Image format signatures ────────────────────────────────────────────
+    // ── Image format signatures ───────────────────────────────────────────
     private const IMAGE_SIGNATURES = [
         'jpeg' => "\xFF\xD8\xFF",
         'png'  => "\x89PNG\r\n",
@@ -61,168 +61,163 @@ class PdfProductImportService
         }
         file_put_contents($tempPdfPath, $pdfContent);
 
-        $config = new \Smalot\PdfParser\Config();
-        $config->setFontSpaceLimit(-50);
-        $config->setRetainImageContent(true);
-
-        $parser = new PdfParser([], $config);
-
         try {
+            $config = new \Smalot\PdfParser\Config();
+            $config->setFontSpaceLimit(-50);
+            $config->setRetainImageContent(true);
+
+            $parser = new PdfParser([], $config);
             $pdf = $parser->parseFile($tempPdfPath);
-        } catch (\Exception $e) {
-            unlink($tempPdfPath);
-            throw new \RuntimeException('Could not parse PDF: ' . $e->getMessage(), 0, $e);
-        }
 
-        $details = $pdf->getDetails();
-        if (! empty($details['Encrypt'])) {
-            unlink($tempPdfPath);
-            throw new \RuntimeException('Encrypted PDFs are not supported.');
-        }
-
-        $pages = $pdf->getPages();
-        if (count($pages) === 0) {
-            unlink($tempPdfPath);
-            throw new \RuntimeException('The PDF contains no pages.');
-        }
-
-        Log::info('PDF IMPORT START', ['pdf'=>$pdfStoredPath, 'pages'=>count($pages)]);
-
-        $pdfBaseName = pathinfo($pdfStoredPath, PATHINFO_FILENAME);
-        $candidates  = [];
-
-        foreach ($pages as $pageIndex => $page) {
-            $pageNumber = $pageIndex + 1;
-            Log::info('PDF PAGE START', ['page'=>$pageNumber]);
-            $this->pagesScanned++;
-
-            // ── Text extraction (best-effort; never fatal) ────────────────
-            $rawText = '';
-            try {
-                $rawText = $page->getText();
-            } catch (\Throwable) {
+            $details = $pdf->getDetails();
+            if (! empty($details['Encrypt'])) {
+                throw new \RuntimeException('Encrypted PDFs are not supported.');
             }
-            $detectedPrice = $this->extractPrice($rawText);
 
-            // ── Log XObjects count ─────────────────────────────────────
-            $xObjects = [];
-            try {
-                $xObjects = $page->getXObjects();
-            } catch (\Throwable) {
+            $pages = $pdf->getPages();
+            if (count($pages) === 0) {
+                throw new \RuntimeException('The PDF contains no pages.');
             }
-            Log::info('RAW PAGE OBJECTS', ['page'=>$pageNumber, 'count'=>count($xObjects)]);
 
-            // ── Pull ALL raw images (filtering disabled for debugging) ───
-            $pageImages = [];
-            try {
-                // TEMPORARILY: Get all raw images without filtering
-                $raw = [];
+            Log::info('PDF IMPORT START', ['pdf'=>$pdfStoredPath, 'pages'=>count($pages)]);
+
+            $pdfBaseName = pathinfo($pdfStoredPath, PATHINFO_FILENAME);
+            $candidates  = [];
+
+            foreach ($pages as $pageIndex => $page) {
+                $pageNumber = $pageIndex + 1;
+                Log::info('PDF PAGE START', ['page'=>$pageNumber]);
+                $this->pagesScanned++;
+
+                // ── Text extraction (best-effort; never fatal) ────────────────
+                $rawText = '';
                 try {
-                    if (method_exists($page, 'getDataStream')) {
-                        $raw = (string) $page->getDataStream();
-                    }
-                } catch (\Throwable) {}
+                    $rawText = $page->getText();
+                } catch (\Throwable) {
+                }
+                $detectedPrice = $this->extractPrice($rawText);
 
-                if (blank($raw)) {
+                // ── Log XObjects count ─────────────────────────────────────
+                $xObjects = [];
+                try {
+                    $xObjects = $page->getXObjects();
+                } catch (\Throwable) {
+                }
+                Log::info('RAW PAGE OBJECTS', ['page'=>$pageNumber, 'count'=>count($xObjects)]);
+
+                // ── Pull ALL raw images (filtering disabled for debugging) ───
+                $pageImages = [];
+                try {
+                    // TEMPORARILY: Get all raw images without filtering
+                    $raw = [];
                     try {
-                        $parts = [];
-                        foreach ($page->getXObjects() as $xo) {
-                            if (method_exists($xo, 'getContent')) {
-                                $parts[] = (string) $xo->getContent();
-                            }
+                        if (method_exists($page, 'getDataStream')) {
+                            $raw = (string) $page->getDataStream();
                         }
-                        $raw = implode('', $parts);
                     } catch (\Throwable) {}
-                }
 
-                if (!blank($raw)) {
-                    foreach (self::IMAGE_SIGNATURES as $ext => $sig) {
-                        $pos = 0;
-                        while (($pos = strpos($raw, $sig, $pos)) !== false) {
-                            $chunk = substr($raw, $pos, 10 * 1024 * 1024);
-                            $cleaned = $this->cleanImageData($chunk, $ext);
-                            // TEMPORARILY: NO MIN_BYTES filter
-                            if (strlen($cleaned) > 100) {
-                                $pageImages[] = ['bytes'=>$cleaned, 'ext'=>$ext];
+                    if (blank($raw)) {
+                        try {
+                            $parts = [];
+                            foreach ($page->getXObjects() as $xo) {
+                                if (method_exists($xo, 'getContent')) {
+                                    $parts[] = (string) $xo->getContent();
+                                }
                             }
-                            $pos++;
+                            $raw = implode('', $parts);
+                        } catch (\Throwable) {}
+                    }
+
+                    if (!blank($raw)) {
+                        foreach (self::IMAGE_SIGNATURES as $ext => $sig) {
+                            $pos = 0;
+                            while (($pos = strpos($raw, $sig, $pos)) !== false) {
+                                $chunk = substr($raw, $pos, 10 * 1024 * 1024);
+                                $cleaned = $this->cleanImageData($chunk, $ext);
+                                // TEMPORARILY: NO MIN_BYTES filter
+                                if (strlen($cleaned) > 100) {
+                                    $pageImages[] = ['bytes'=>$cleaned, 'ext'=>$ext];
+                                }
+                                $pos++;
+                            }
                         }
                     }
+                    Log::info('IMAGE EXTRACTED', [
+                        'page'=>$pageNumber,
+                        'count'=>count($pageImages),
+                        'total_bytes'=>array_sum(array_map(fn($i)=>strlen($i['bytes']), $pageImages))
+                    ]);
+                } catch (\Throwable $e) {
+                    $this->failedCount++;
+                    Log::warning('PAGE EXTRACTION FAILED', ['page'=>$pageNumber, 'error'=>$e->getMessage()]);
                 }
-                Log::info('IMAGE EXTRACTED', [
-                    'page'=>$pageNumber,
-                    'count'=>count($pageImages),
-                    'total_bytes'=>array_sum(array_map(fn($i)=>strlen($i['bytes']), $pageImages))
-                ]);
-            } catch (\Throwable $e) {
-                $this->failedCount++;
-                Log::warning('PAGE EXTRACTION FAILED', ['page'=>$pageNumber, 'error'=>$e->getMessage()]);
+
+                // ── Fallback: render page to image if no embedded images ───────
+                $fromEmbedded = true;
+                $isPlaceholder = false;
+                if (empty($pageImages)) {
+                    Log::info('FALLBACK RENDER USED', ['page'=>$pageNumber]);
+                    $fallbackBytes = $this->generateFallbackPageImageBytes();
+                    if ($fallbackBytes) {
+                        $pageImages[] = ['bytes'=>$fallbackBytes, 'ext'=>'jpg'];
+                        $fromEmbedded = false;
+                        $isPlaceholder = true;
+                        $this->placeholderCount++;
+                    }
+                }
+
+                // Sequential counter for unique-per-page suffix.
+                $uniqueOnPage = 0;
+
+                foreach ($pageImages as $imgData) {
+                    ['bytes'=>$bytes, 'ext'=>$ext] = $imgData;
+
+                    // Ensure GD extension available for resize
+                    $processedBytes = $this->resizeImage($bytes, $ext);
+
+                    $safeName = $this->sanitiseFilename($pdfBaseName);
+                    $suffix   = $uniqueOnPage > 0 ? "-img{$uniqueOnPage}" : '';
+                    $filename = "products/{$safeName}-p{$pageNumber}{$suffix}.jpg";
+                    Storage::disk('public')->makeDirectory('products');
+                    Storage::disk('public')->put($filename, $processedBytes);
+
+                    // Verify immediately
+                    if (!Storage::disk('public')->exists($filename)) {
+                        throw new \RuntimeException("Image written but file missing: {$filename}");
+                    }
+
+                    Log::info('IMAGE SAVED', [
+                        'stored_path'=>$filename,
+                        'exists'=>Storage::disk('public')->exists($filename),
+                        'url'=>Storage::disk('public')->url($filename),
+                        'size'=>Storage::disk('public')->size($filename),
+                    ]);
+
+                    $name = $this->generateProductName($rawText, $pageNumber);
+                    $candidates[] = $this->buildCandidate(
+                        storedPath:    $filename,
+                        name:        $name,
+                        price:        $detectedPrice,
+                        pageNumber:  $pageNumber,
+                        fromEmbedded: $fromEmbedded,
+                        sha256:      hash('sha256', $bytes),
+                        pdfBaseName:  $safeName,
+                        isPlaceholder: $isPlaceholder,
+                    );
+                    $this->extractedCount++;
+                    $uniqueOnPage++;
+                }
             }
 
-            // ── Fallback: render page to image if no embedded images ───────
-            $fromEmbedded = true;
-            $isPlaceholder = false;
-            if (empty($pageImages)) {
-                Log::info('FALLBACK RENDER USED', ['page'=>$pageNumber]);
-                $fallbackBytes = $this->generateFallbackPageImageBytes();
-                if ($fallbackBytes) {
-                    $pageImages[] = ['bytes'=>$fallbackBytes, 'ext'=>'jpg'];
-                    $fromEmbedded = false;
-                    $isPlaceholder = true;
-                    $this->placeholderCount++;
-                }
-            }
+            Log::info('PDF IMPORT COMPLETE', ['count'=>count($candidates), 'paths'=>array_column($candidates, 'stored_path')]);
 
-            // Sequential counter for unique-per-page suffix.
-            $uniqueOnPage = 0;
-
-            foreach ($pageImages as $imgData) {
-                ['bytes'=>$bytes, 'ext'=>$ext] = $imgData;
-
-                // Ensure GD extension available for resize
-                $processedBytes = $this->resizeImage($bytes, $ext);
-
-                $safeName = $this->sanitiseFilename($pdfBaseName);
-                $suffix   = $uniqueOnPage > 0 ? "-img{$uniqueOnPage}" : '';
-                $filename = "products/{$safeName}-p{$pageNumber}{$suffix}.jpg";
-                Storage::disk('public')->makeDirectory('products');
-                Storage::disk('public')->put($filename, $processedBytes);
-
-                // Verify immediately
-                if (!Storage::disk('public')->exists($filename)) {
-                    unlink($tempPdfPath);
-                    throw new \RuntimeException("Image written but file missing: {$filename}");
-                }
-
-                Log::info('IMAGE SAVED', [
-                    'stored_path'=>$filename,
-                    'exists'=>Storage::disk('public')->exists($filename),
-                    'url'=>Storage::disk('public')->url($filename),
-                    'size'=>Storage::disk('public')->size($filename),
-                ]);
-
-                $name = $this->generateProductName($rawText, $pageNumber);
-                $candidates[] = $this->buildCandidate(
-                    storedPath:    $filename,
-                    name:        $name,
-                    price:        $detectedPrice,
-                    pageNumber:  $pageNumber,
-                    fromEmbedded: $fromEmbedded,
-                    sha256:      hash('sha256', $bytes),
-                    pdfBaseName:  $safeName,
-                    isPlaceholder: $isPlaceholder,
-                );
-                $this->extractedCount++;
-                $uniqueOnPage++;
+            return $candidates;
+        } finally {
+            // Clean up temporary file
+            if (file_exists($tempPdfPath)) {
+                unlink($tempPdfPath);
             }
         }
-
-        // Clean up temporary file
-        unlink($tempPdfPath);
-
-        Log::info('PDF IMPORT COMPLETE', ['count'=>count($candidates), 'paths'=>array_column($candidates, 'stored_path')]);
-
-        return $candidates;
     }
 
     private function generateFallbackPageImageBytes(): ?string
@@ -410,19 +405,5 @@ class PdfProductImportService
         }
 
         return "Product Page {$pageNumber}";
-    }
-
-    private function guardFile(string $path): void
-    {
-        if (! file_exists($path)) {
-            throw new \RuntimeException("PDF file not found: {$path}");
-        }
-        if (! is_readable($path)) {
-            throw new \RuntimeException("PDF file is not readable: {$path}");
-        }
-        $mime = mime_content_type($path);
-        if ($mime !== 'application/pdf' && $mime !== 'application/x-pdf') {
-            throw new \RuntimeException("File does not appear to be a valid PDF (detected: {$mime}).");
-        }
     }
 }
