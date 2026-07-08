@@ -18,26 +18,9 @@ class ProductImage extends Model
     public function getImageUrlAttribute(): string
     {
         if ($this->image) {
-            $exists = Storage::disk('public')->exists($this->image);
-            $diskPath = Storage::disk('public')->path($this->image);
-            $publicStorage = public_path('storage');
-            
-            logger()->info('PRODUCT_IMAGE DIAGNOSTICS', [
-                'db_value'      => $this->image,
-                'normalized'    => $this->image,
-                'exists_method' => $exists,
-                'url'           => Storage::disk('public')->url($this->image),
-                'disk_path'     => $diskPath,
-                'realpath'      => realpath($diskPath),
-                'file_exists'   => file_exists($diskPath),
-                'is_link'       => is_link($publicStorage),
-                'readlink'      => is_link($publicStorage) ? @readlink($publicStorage) : null,
-                'files_list'    => Storage::disk('public')->files('products'),
-                'all_files_list'=> Storage::disk('public')->allFiles('products'),
-            ]);
-
-            if ($exists) {
-                return Storage::disk('public')->url($this->image);
+            $path = preg_replace('#^storage/#', '', $this->image);
+            if (Storage::disk('public')->exists($path)) {
+                return Storage::disk('public')->url($path);
             }
         }
         return asset('images/placeholders/product-coming-soon.svg');
