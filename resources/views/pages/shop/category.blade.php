@@ -4,7 +4,7 @@
     {{-- Category Banner --}}
     <div class="relative bg-gray-900 h-80 flex items-center justify-center">
         @if($category->image)
-            <img src="{{ asset('storage/' . $category->image) }}" alt="{{ $category->name }}" class="absolute inset-0 w-full h-full object-cover opacity-40">
+            <img src="{{ $category->image_url }}" alt="{{ $category->name }}" class="absolute inset-0 w-full h-full object-cover opacity-40">
         @else
             <div class="absolute inset-0 w-full h-full bg-[#6E0F12] opacity-80"></div>
         @endif
