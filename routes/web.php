@@ -20,6 +20,26 @@ use Illuminate\Support\Facades\Storage;
 Route::get('/', function () {
     return view('welcome');
 })->name('home');
+
+// Temporary storage debug route - REMOVE AFTER DEBUGGING
+Route::get('/storage-debug', function () {
+    // Get first product with thumbnail for real test file
+    $product = App\Models\Product::whereNotNull('thumbnail')->first();
+    $testFilePath = $product ? $product->thumbnail : 'products/test.jpg';
+    
+    return response()->json([
+        'driver' => config('filesystems.disks.public.driver'),
+        'default_disk' => config('filesystems.default'),
+        'filesystem_public_disk' => env('FILESYSTEM_PUBLIC_DISK'),
+        'supabase_bucket' => env('SUPABASE_BUCKET'),
+        'endpoint' => env('SUPABASE_ENDPOINT'),
+        'test_file_path' => $testFilePath,
+        'url' => Storage::disk('public')->url($testFilePath),
+        'exists' => Storage::disk('public')->exists($testFilePath),
+        'files' => Storage::disk('public')->files('products')
+    ]);
+});
+
 // SEO
 Route::get('/sitemap.xml', [SeoController::class, 'sitemap'])->name('seo.sitemap');
 Route::get('/robots.txt',  [SeoController::class, 'robots'])->name('seo.robots');
