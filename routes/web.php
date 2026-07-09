@@ -242,7 +242,6 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
-});
 
 // TEMPORARY DEBUG ROUTE FOR S3 UPLOAD EXCEPTION CAPTURE - REMOVE AFTER DEBUGGING
 Route::get('/s3-upload-exception-debug', function () {
