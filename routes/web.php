@@ -428,14 +428,173 @@ Route::get('/storage-upload-debug', function () {
 
 // TEMP DEBUG ROUTE: List all files in public disk bucket + last product
 Route::get('/storage-list-debug', function () {
-    $disk = Storage::disk('public');
-    
-    return response()->json([
-        'disk_config' => config('filesystems.disks.public'),
-        'all_files' => $disk->allFiles('/'),
-        'all_directories' => $disk->directories('/'),
-        'latest_product' => \App\Models\Product::latest()->first(),
-    ], JSON_PRETTY_PRINT);
+    $steps = [];
+
+    try {
+        $steps[] = [
+            'step' => 'Get disk config',
+            'success' => true,
+            'result' => config('filesystems.disks.public'),
+            'exception' => null,
+        ];
+    } catch (\Throwable $e) {
+        $steps[] = [
+            'step' => 'Get disk config',
+            'success' => false,
+            'result' => null,
+            'exception' => $e->getMessage(),
+            'trace_line' => $e->getLine(),
+        ];
+    }
+
+    try {
+        $disk = Storage::disk('public');
+        $steps[] = [
+            'step' => 'Get public disk',
+            'success' => true,
+            'result' => get_class($disk),
+            'exception' => null,
+        ];
+    } catch (\Throwable $e) {
+        $steps[] = [
+            'step' => 'Get public disk',
+            'success' => false,
+            'result' => null,
+            'exception' => $e->getMessage(),
+            'trace_line' => $e->getLine(),
+        ];
+        return response()->json($steps, JSON_PRETTY_PRINT);
+    }
+
+    try {
+        $allFiles = $disk->allFiles('/');
+        $steps[] = [
+            'step' => 'Storage::allFiles()',
+            'success' => true,
+            'result' => $allFiles,
+            'exception' => null,
+        ];
+    } catch (\Throwable $e) {
+        $steps[] = [
+            'step' => 'Storage::allFiles()',
+            'success' => false,
+            'result' => null,
+            'exception' => $e->getMessage(),
+            'trace_line' => $e->getLine(),
+        ];
+    }
+
+    try {
+        $allDirs = $disk->directories('/');
+        $steps[] = [
+            'step' => 'Storage::directories()',
+            'success' => true,
+            'result' => $allDirs,
+            'exception' => null,
+        ];
+    } catch (\Throwable $e) {
+        $steps[] = [
+            'step' => 'Storage::directories()',
+            'success' => false,
+            'result' => null,
+            'exception' => $e->getMessage(),
+            'trace_line' => $e->getLine(),
+        ];
+    }
+
+    try {
+        $latestProduct = \App\Models\Product::latest()->first();
+        $steps[] = [
+            'step' => 'Product::latest()->first()',
+            'success' => true,
+            'result' => $latestProduct ? $latestProduct->toArray() : null,
+            'exception' => null,
+        ];
+
+        if ($latestProduct) {
+            try {
+                $thumbnail = $latestProduct->thumbnail;
+                $steps[] = [
+                    'step' => 'Access $product->thumbnail',
+                    'success' => true,
+                    'result' => $thumbnail,
+                    'exception' => null,
+                ];
+            } catch (\Throwable $e) {
+                $steps[] = [
+                    'step' => 'Access $product->thumbnail',
+                    'success' => false,
+                    'result' => null,
+                    'exception' => $e->getMessage(),
+                    'trace_line' => $e->getLine(),
+                ];
+            }
+
+            try {
+                $exists = $disk->exists($latestProduct->thumbnail);
+                $steps[] = [
+                    'step' => 'Storage::exists(thumbnail)',
+                    'success' => true,
+                    'result' => $exists,
+                    'exception' => null,
+                ];
+            } catch (\Throwable $e) {
+                $steps[] = [
+                    'step' => 'Storage::exists(thumbnail)',
+                    'success' => false,
+                    'result' => null,
+                    'exception' => $e->getMessage(),
+                    'trace_line' => $e->getLine(),
+                ];
+            }
+
+            try {
+                $url = $disk->url($latestProduct->thumbnail);
+                $steps[] = [
+                    'step' => 'Storage::url(thumbnail)',
+                    'success' => true,
+                    'result' => $url,
+                    'exception' => null,
+                ];
+            } catch (\Throwable $e) {
+                $steps[] = [
+                    'step' => 'Storage::url(thumbnail)',
+                    'success' => false,
+                    'result' => null,
+                    'exception' => $e->getMessage(),
+                    'trace_line' => $e->getLine(),
+                ];
+            }
+
+            try {
+                $thumbnailUrl = $latestProduct->thumbnail_url;
+                $steps[] = [
+                    'step' => 'Access $product->thumbnail_url (accessor)',
+                    'success' => true,
+                    'result' => $thumbnailUrl,
+                    'exception' => null,
+                ];
+            } catch (\Throwable $e) {
+                $steps[] = [
+                    'step' => 'Access $product->thumbnail_url (accessor)',
+                    'success' => false,
+                    'result' => null,
+                    'exception' => $e->getMessage(),
+                    'trace_line' => $e->getLine(),
+                ];
+            }
+        }
+    } catch (\Throwable $e) {
+        $steps[] = [
+            'step' => 'Product::latest()->first()',
+            'success' => false,
+            'result' => null,
+            'exception' => $e->getMessage(),
+            'trace_line' => $e->getLine(),
+        ];
+    }
+
+    return response()->json($steps, JSON_PRETTY_PRINT);
 })->withoutMiddleware([
     \Illuminate\Session\Middleware\StartSession::class,
     \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
