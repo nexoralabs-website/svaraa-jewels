@@ -19,10 +19,14 @@ class ProductForm
     {
         return $schema
             ->afterHydrate(function ($state) {
-                \Log::info('[FILAMENT DEBUG - AFTER HYDRATE] Form state:', $state);
+                Log::error('[FILAMENT DEBUG] AFTER HYDRATE form state:', $state);
             })
             ->beforeSave(function ($state) {
-                \Log::info('[FILAMENT DEBUG - BEFORE SAVE] Form state:', $state);
+                Log::error('[FILAMENT DEBUG] BEFORE SAVE form state:', $state);
+            })
+            ->afterSave(function ($state, $record) {
+                Log::error('[FILAMENT DEBUG] AFTER SAVE form state:', $state);
+                Log::error('[FILAMENT DEBUG] AFTER SAVE record data:', $record->attributesToArray());
             })
             ->components([
                 Select::make('category_id')

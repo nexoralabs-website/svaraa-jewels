@@ -12,6 +12,47 @@ class ProductImage extends Model
 {
     protected $fillable = ['product_id', 'image', 'is_primary'];
 
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        static::creating(function (ProductImage $productImage) {
+            Log::error('[PRODUCT_IMAGE DEBUG] CREATING event:', [
+                'image' => $productImage->image,
+                'product_id' => $productImage->product_id,
+                'attributes' => $productImage->attributesToArray(),
+                'dirty' => $productImage->getDirty(),
+            ]);
+        });
+
+        static::created(function (ProductImage $productImage) {
+            Log::error('[PRODUCT_IMAGE DEBUG] CREATED event:', [
+                'image' => $productImage->image,
+                'product_id' => $productImage->product_id,
+                'attributes' => $productImage->attributesToArray(),
+                'dirty' => $productImage->getDirty(),
+            ]);
+        });
+
+        static::saving(function (ProductImage $productImage) {
+            Log::error('[PRODUCT_IMAGE DEBUG] SAVING event:', [
+                'image' => $productImage->image,
+                'product_id' => $productImage->product_id,
+                'attributes' => $productImage->attributesToArray(),
+                'dirty' => $productImage->getDirty(),
+            ]);
+        });
+
+        static::saved(function (ProductImage $productImage) {
+            Log::error('[PRODUCT_IMAGE DEBUG] SAVED event:', [
+                'image' => $productImage->image,
+                'product_id' => $productImage->product_id,
+                'attributes' => $productImage->attributesToArray(),
+                'dirty' => $productImage->getDirty(),
+            ]);
+        });
+    }
+
     /**
      * Get the full URL for the image, with fallback to placeholder.
      */

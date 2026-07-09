@@ -35,22 +35,45 @@ class Product extends Model
         parent::boot();
 
         static::creating(function (Product $product) {
-            \Log::info('[PRODUCT DEBUG - CREATING] Product data:', [
+            Log::error('[PRODUCT DEBUG] CREATING event:', [
                 'id' => $product->id,
-                'name' => $product->name,
                 'thumbnail' => $product->thumbnail,
-                'thumbnail_dirty' => $product->isDirty('thumbnail'),
                 'original_thumbnail' => $product->getOriginal('thumbnail'),
+                'dirty' => $product->getDirty(),
+                'attributes' => $product->attributesToArray(),
             ]);
         });
 
-        static::saving(function (Product $product) {
-            \Log::info('[PRODUCT DEBUG - SAVING] Product data:', [
+        static::created(function (Product $product) {
+            Log::error('[PRODUCT DEBUG] CREATED event:', [
                 'id' => $product->id,
-                'name' => $product->name,
                 'thumbnail' => $product->thumbnail,
-                'thumbnail_dirty' => $product->isDirty('thumbnail'),
                 'original_thumbnail' => $product->getOriginal('thumbnail'),
+                'dirty' => $product->getDirty(),
+                'attributes' => $product->attributesToArray(),
+            ]);
+
+            // Filesystem verification
+            if (!empty($product->thumbnail)) {
+                Log::error('[FILESYSTEM DEBUG] After Product created:', [
+                    'thumbnail' => $product->thumbnail,
+                    'Storage::exists' => Storage::disk('public')->exists($product->thumbnail),
+                    'Storage::path' => Storage::disk('public')->path($product->thumbnail),
+                    'realpath' => realpath(Storage::disk('public')->path($product->thumbnail)),
+                    'file_exists' => file_exists(Storage::disk('public')->path($product->thumbnail)),
+                    'Storage::files(products)' => Storage::disk('public')->files('products'),
+                    'Storage::allFiles(products)' => Storage::disk('public')->allFiles('products'),
+                ]);
+            }
+        });
+
+        static::saving(function (Product $product) {
+            Log::error('[PRODUCT DEBUG] SAVING event:', [
+                'id' => $product->id,
+                'thumbnail' => $product->thumbnail,
+                'original_thumbnail' => $product->getOriginal('thumbnail'),
+                'dirty' => $product->getDirty(),
+                'attributes' => $product->attributesToArray(),
             ]);
 
             if (empty($product->slug) || $product->isDirty('name')) {
@@ -65,26 +88,54 @@ class Product extends Model
             }
         });
 
-        static::created(function (Product $product) {
-            \Log::info('[PRODUCT DEBUG - CREATED] Product data:', [
+        static::saved(function (Product $product) {
+            Log::error('[PRODUCT DEBUG] SAVED event:', [
                 'id' => $product->id,
                 'thumbnail' => $product->thumbnail,
+                'original_thumbnail' => $product->getOriginal('thumbnail'),
+                'dirty' => $product->getDirty(),
+                'attributes' => $product->attributesToArray(),
             ]);
 
-            // Re-query the database to confirm
+            // Filesystem verification
+            if (!empty($product->thumbnail)) {
+                Log::error('[FILESYSTEM DEBUG] After Product saved:', [
+                    'thumbnail' => $product->thumbnail,
+                    'Storage::exists' => Storage::disk('public')->exists($product->thumbnail),
+                    'Storage::path' => Storage::disk('public')->path($product->thumbnail),
+                    'realpath' => realpath(Storage::disk('public')->path($product->thumbnail)),
+                    'file_exists' => file_exists(Storage::disk('public')->path($product->thumbnail)),
+                    'Storage::files(products)' => Storage::disk('public')->files('products'),
+                    'Storage::allFiles(products)' => Storage::disk('public')->allFiles('products'),
+                ]);
+            }
+
+            // Re-query DB
             $dbProduct = self::find($product->id);
-            \Log::info('[PRODUCT DEBUG - DATABASE QUERY] Re-query result:', [
+            Log::error('[PRODUCT DEBUG] DB Re-query after save:', [
                 'id' => $dbProduct?->id,
                 'thumbnail' => $dbProduct?->thumbnail,
+                'attributes' => $dbProduct?->attributesToArray(),
             ]);
         });
 
-        static::saved(function (Product $product) {
-            \Log::info('[PRODUCT DEBUG - SAVED] Product data:', [
+        static::updating(function (Product $product) {
+            Log::error('[PRODUCT DEBUG] UPDATING event:', [
                 'id' => $product->id,
                 'thumbnail' => $product->thumbnail,
-                'thumbnail_exists' => Storage::disk('public')->exists($product->thumbnail),
-                'storage_url' => Storage::disk('public')->url($product->thumbnail),
+                'original_thumbnail' => $product->getOriginal('thumbnail'),
+                'dirty' => $product->getDirty(),
+                'attributes' => $product->attributesToArray(),
+            ]);
+        });
+
+        static::updated(function (Product $product) {
+            Log::error('[PRODUCT DEBUG] UPDATED event:', [
+                'id' => $product->id,
+                'thumbnail' => $product->thumbnail,
+                'original_thumbnail' => $product->getOriginal('thumbnail'),
+                'dirty' => $product->getDirty(),
+                'attributes' => $product->attributesToArray(),
             ]);
         });
     }

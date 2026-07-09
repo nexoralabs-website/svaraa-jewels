@@ -37,13 +37,16 @@ class AppServiceProvider extends ServiceProvider
             }
         }
 
-        // TEMP DEBUG: Log database queries
-        \Illuminate\Support\Facades\DB::listen(function ($query) {
-            \Illuminate\Support\Facades\Log::info('[DB DEBUG] Query executed:', [
-                'sql' => $query->sql,
-                'bindings' => $query->bindings,
-                'time' => $query->time,
-            ]);
+        // TEMP DEBUG: Log database queries for products and product_images
+        DB::listen(function ($query) {
+            $sqlLower = strtolower($query->sql);
+            if (str_contains($sqlLower, 'products') || str_contains($sqlLower, 'product_images')) {
+                Log::error('[DB DEBUG] Query executed:', [
+                    'sql' => $query->sql,
+                    'bindings' => $query->bindings,
+                    'time' => $query->time,
+                ]);
+            }
         });
 
         // Temporary diagnostics: log Filament / auth failures
