@@ -34,8 +34,17 @@ class Product extends Model
     {
         parent::boot();
 
+        static::creating(function (Product $product) {
+            \Log::info('[PRODUCT DEBUG - CREATING] Product data:', [
+                'id' => $product->id,
+                'name' => $product->name,
+                'thumbnail' => $product->thumbnail,
+                'thumbnail_dirty' => $product->isDirty('thumbnail'),
+                'original_thumbnail' => $product->getOriginal('thumbnail'),
+            ]);
+        });
+
         static::saving(function (Product $product) {
-            // TEMP DEBUG LOG: Check thumbnail before saving
             \Log::info('[PRODUCT DEBUG - SAVING] Product data:', [
                 'id' => $product->id,
                 'name' => $product->name,
@@ -56,8 +65,21 @@ class Product extends Model
             }
         });
 
+        static::created(function (Product $product) {
+            \Log::info('[PRODUCT DEBUG - CREATED] Product data:', [
+                'id' => $product->id,
+                'thumbnail' => $product->thumbnail,
+            ]);
+
+            // Re-query the database to confirm
+            $dbProduct = self::find($product->id);
+            \Log::info('[PRODUCT DEBUG - DATABASE QUERY] Re-query result:', [
+                'id' => $dbProduct?->id,
+                'thumbnail' => $dbProduct?->thumbnail,
+            ]);
+        });
+
         static::saved(function (Product $product) {
-            // TEMP DEBUG LOG: Check thumbnail after saving
             \Log::info('[PRODUCT DEBUG - SAVED] Product data:', [
                 'id' => $product->id,
                 'thumbnail' => $product->thumbnail,

@@ -37,6 +37,15 @@ class AppServiceProvider extends ServiceProvider
             }
         }
 
+        // TEMP DEBUG: Log database queries
+        \Illuminate\Support\Facades\DB::listen(function ($query) {
+            \Illuminate\Support\Facades\Log::info('[DB DEBUG] Query executed:', [
+                'sql' => $query->sql,
+                'bindings' => $query->bindings,
+                'time' => $query->time,
+            ]);
+        });
+
         // Temporary diagnostics: log Filament / auth failures
         Event::listen(Failed::class, function (Failed $event) {
             Log::channel('daily')->warning('Auth failed', [

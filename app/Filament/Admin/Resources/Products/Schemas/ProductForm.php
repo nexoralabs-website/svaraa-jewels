@@ -18,6 +18,12 @@ class ProductForm
     public static function configure(Schema $schema): Schema
     {
         return $schema
+            ->afterHydrate(function ($state) {
+                \Log::info('[FILAMENT DEBUG - AFTER HYDRATE] Form state:', $state);
+            })
+            ->beforeSave(function ($state) {
+                \Log::info('[FILAMENT DEBUG - BEFORE SAVE] Form state:', $state);
+            })
             ->components([
                 Select::make('category_id')
                     ->label('Category')
