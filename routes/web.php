@@ -16,6 +16,8 @@ use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SeoController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use League\Flysystem\UnableToWriteFile;
 
 Route::get('/', function () {
     return view('welcome');
@@ -240,5 +242,189 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
+});
+
+// TEMPORARY DEBUG ROUTE FOR S3 UPLOAD EXCEPTION CAPTURE - REMOVE AFTER DEBUGGING
+Route::get('/s3-upload-exception-debug', function () {
+    $disk = Illuminate\Support\Facades\Storage::disk('public');
+    $output = [];
+    $testKey = 'products/debug-test-file-' . Illuminate\Support\Str::random(16) . '.txt';
+    $testContent = 'This is a test file for S3 upload debugging';
+    
+    $output['config'] = config('filesystems.disks.public');
+    $output['test_key'] = $testKey;
+    
+    // First, temporarily set throw=true on the disk config to get exceptions
+    $originalConfig = $output['config'];
+    $tempConfig = array_merge($originalConfig, ['throw' => true]);
+    
+    try {
+        // Recreate disk with throw=true temporarily
+        $tempDisk = Illuminate\Support\Facades\Storage::build($tempConfig);
+        
+        $startTime = microtime(true);
+        $output['upload_started'] = $startTime;
+        
+        // Try to upload test file
+        $uploadResult = $tempDisk->put($testKey, $testContent, 'public');
+        
+        $output['upload_result'] = $uploadResult;
+        $output['upload_elapsed'] = round(microtime(true) - $startTime, 4);
+        
+        // If success, check exists and get URL
+        if ($uploadResult) {
+            $output['exists_after_upload'] = $tempDisk->exists($testKey);
+            $output['url_after_upload'] = $tempDisk->url($testKey);
+        }
+    } catch (\League\Flysystem\UnableToWriteFile $e) {
+        $output['exception_type'] = 'UnableToWriteFile';
+        $output['flysystem_exception'] = [
+            'message' => $e->getMessage(),
+            'code' => $e->getCode(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+            'trace' => $e->getTraceAsString(),
+        ];
+        
+        $previous = $e->getPrevious();
+        if ($previous instanceof \Aws\S3\Exception\S3Exception) {
+            $output['aws_s3_exception'] = [
+                'class' => get_class($previous),
+                'message' => $previous->getMessage(),
+                'code' => $previous->getCode(),
+                'aws_error_code' => $previous->getAwsErrorCode(),
+                'aws_error_type' => $previous->getAwsErrorType(),
+                'http_status_code' => $previous->getStatusCode(),
+                'response_body' => $previous->getResponse() ? (string)$previous->getResponse()->getBody() : 'no response',
+                'request_id' => $previous->getRequestId(),
+                'host_id' => $previous->getHostId(),
+                'bucket' => $previous->get('bucket') ?? 'not available',
+                'endpoint' => $tempConfig['endpoint'] ?? 'not available',
+                'key' => $testKey,
+            ];
+        } elseif ($previous) {
+            $output['previous_exception'] = [
+                'class' => get_class($previous),
+                'message' => $previous->getMessage(),
+                'code' => $previous->getCode(),
+                'trace' => $previous->getTraceAsString(),
+            ];
+        }
+    } catch (\Exception $e) {
+        $output['general_exception'] = [
+            'class' => get_class($e),
+            'message' => $e->getMessage(),
+            'code' => $e->getCode(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+            'trace' => $e->getTraceAsString(),
+        ];
+    }
+    
+    // Check log files for any logged exceptions
+    $logFiles = [
+        storage_path('logs/laravel.log'),
+    ];
+    
+    $output['log_check'] = [];
+    foreach ($logFiles as $logFile) {
+        if (file_exists($logFile)) {
+            $output['log_check'][$logFile] = [
+                'exists' => true,
+                'last_50_lines' => file($logFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ? array_slice(file($logFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES), -50) : 'empty log',
+            ];
+        } else {
+            $output['log_check'][$logFile] = ['exists' => false];
+        }
+    }
+    
+    // Also check what files are currently in the bucket
+    try {
+        $output['bucket_files'] = $disk->allFiles('/');
+        $output['bucket_directories'] = $disk->directories('/');
+    } catch (Exception $e) {
+        $output['bucket_list_error'] = [
+            'class' => get_class($e),
+            'message' => $e->getMessage(),
+        ];
+    }
+    
+    return response()->json($output, JSON_PRETTY_PRINT);
+})->withoutMiddleware([
+    Illuminate\Session\Middleware\StartSession::class,
+    Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
+    Illuminate\Cookie\Middleware\EncryptCookies::class,
+    Illuminate\View\Middleware\ShareErrorsFromSession::class,
+    Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class,
+    Illuminate\Routing\Middleware\SubstituteBindings::class,
+]);
+
+// Temporary storage upload debug route
+Route::get('/storage-upload-debug', function () {
+    $result = [
+        'upload_result' => null,
+        'exception_class' => null,
+        'exception_message' => null,
+        'previous_exception_class' => null,
+        'previous_exception_message' => null,
+        'aws_error_code' => null,
+        'aws_error_type' => null,
+        'http_status_code' => null,
+        'request_id' => null,
+        'host_id' => null,
+        'endpoint' => null,
+        'bucket' => null,
+        'object_key' => null,
+        'exists' => null,
+        'url' => null,
+    ];
+
+    $disk = Storage::disk('public');
+    $testKey = 'debug-test-' . Str::random(16) . '.txt';
+    $testContent = 'Test upload content';
+
+    try {
+        // Upload test content
+        $result['upload_result'] = $disk->put($testKey, $testContent);
+
+        if ($result['upload_result']) {
+            $result['exists'] = $disk->exists($testKey);
+            $result['url'] = $disk->url($testKey);
+            $result['object_key'] = $testKey;
+            $result['bucket'] = config('filesystems.disks.public.bucket');
+            $result['endpoint'] = config('filesystems.disks.public.endpoint');
+            $disk->delete($testKey);
+        }
+    } catch (\Throwable $e) {
+        $result['exception_class'] = get_class($e);
+        $result['exception_message'] = $e->getMessage();
+
+        $previous = $e->getPrevious();
+        if ($previous) {
+            $result['previous_exception_class'] = get_class($previous);
+            $result['previous_exception_message'] = $previous->getMessage();
+
+            if ($previous instanceof \Aws\S3\Exception\S3Exception) {
+                $result['aws_error_code'] = $previous->getAwsErrorCode();
+                $result['aws_error_type'] = $previous->getAwsErrorType();
+                $result['http_status_code'] = $previous->getStatusCode();
+                $result['request_id'] = $previous->getRequestId();
+                $result['host_id'] = $previous->getHostId();
+                $result['endpoint'] = config('filesystems.disks.public.endpoint');
+                $result['bucket'] = config('filesystems.disks.public.bucket');
+                $result['object_key'] = $testKey;
+            }
+        }
+    }
+
+    return response()->json($result);
+})->withoutMiddleware([
+    \Illuminate\Session\Middleware\StartSession::class,
+    \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
+    \Illuminate\Cookie\Middleware\EncryptCookies::class,
+    \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+    \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class,
+    \Illuminate\Routing\Middleware\SubstituteBindings::class,
+]);
 
 require __DIR__.'/auth.php';
