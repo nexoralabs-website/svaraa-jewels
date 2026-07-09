@@ -35,6 +35,15 @@ class Product extends Model
         parent::boot();
 
         static::saving(function (Product $product) {
+            // TEMP DEBUG LOG: Check thumbnail before saving
+            \Log::info('[PRODUCT DEBUG - SAVING] Product data:', [
+                'id' => $product->id,
+                'name' => $product->name,
+                'thumbnail' => $product->thumbnail,
+                'thumbnail_dirty' => $product->isDirty('thumbnail'),
+                'original_thumbnail' => $product->getOriginal('thumbnail'),
+            ]);
+
             if (empty($product->slug) || $product->isDirty('name')) {
                 $base = Str::slug($product->name);
                 $slug = $base;
@@ -45,6 +54,16 @@ class Product extends Model
                 }
                 $product->slug = $slug;
             }
+        });
+
+        static::saved(function (Product $product) {
+            // TEMP DEBUG LOG: Check thumbnail after saving
+            \Log::info('[PRODUCT DEBUG - SAVED] Product data:', [
+                'id' => $product->id,
+                'thumbnail' => $product->thumbnail,
+                'thumbnail_exists' => Storage::disk('public')->exists($product->thumbnail),
+                'storage_url' => Storage::disk('public')->url($product->thumbnail),
+            ]);
         });
     }
 

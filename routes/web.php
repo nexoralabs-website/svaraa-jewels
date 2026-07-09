@@ -426,4 +426,23 @@ Route::get('/storage-upload-debug', function () {
     \Illuminate\Routing\Middleware\SubstituteBindings::class,
 ]);
 
+// TEMP DEBUG ROUTE: List all files in public disk bucket + last product
+Route::get('/storage-list-debug', function () {
+    $disk = Storage::disk('public');
+    
+    return response()->json([
+        'disk_config' => config('filesystems.disks.public'),
+        'all_files' => $disk->allFiles('/'),
+        'all_directories' => $disk->directories('/'),
+        'latest_product' => \App\Models\Product::latest()->first(),
+    ], JSON_PRETTY_PRINT);
+})->withoutMiddleware([
+    \Illuminate\Session\Middleware\StartSession::class,
+    \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
+    \Illuminate\Cookie\Middleware\EncryptCookies::class,
+    \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+    \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class,
+    \Illuminate\Routing\Middleware\SubstituteBindings::class,
+]);
+
 require __DIR__.'/auth.php';
