@@ -19,34 +19,6 @@ class ProductForm
     public static function configure(Schema $schema): Schema
     {
         return $schema
-            ->afterHydrate(function ($state) {
-                Log::error('[Stage 1]', [
-                    'thumbnail' => $state['thumbnail'] ?? null,
-                    'thumbnail_type' => gettype($state['thumbnail'] ?? null),
-                    'data_keys' => array_keys($state),
-                ]);
-            })
-            ->beforeStateDehydrated(function ($component, $state) {
-                Log::error('[Stage 2]', [
-                    'thumbnail' => $state['thumbnail'] ?? null,
-                    'thumbnail_type' => gettype($state['thumbnail'] ?? null),
-                    'data_keys' => array_keys($state),
-                ]);
-            })
-            ->beforeSave(function ($state) {
-                Log::error('[Stage after saveUploadedFiles]', [
-                    'thumbnail' => $state['thumbnail'] ?? null,
-                    'thumbnail_type' => gettype($state['thumbnail'] ?? null),
-                    'data_keys' => array_keys($state),
-                ]);
-            })
-            ->afterSave(function ($state, $record) {
-                Log::error('[Stage after model save]', [
-                    'thumbnail' => $record->thumbnail ?? null,
-                    'thumbnail_type' => gettype($record->thumbnail ?? null),
-                    'record_keys' => array_keys($record->attributesToArray()),
-                ]);
-            })
             ->components([
                 Select::make('category_id')
                     ->label('Category')
