@@ -37,14 +37,11 @@ class AppServiceProvider extends ServiceProvider
             }
         }
 
-        // TEMP DEBUG: Log database queries for products and product_images
         DB::listen(function ($query) {
-            $sqlLower = strtolower($query->sql);
-            if (str_contains($sqlLower, 'products') || str_contains($sqlLower, 'product_images')) {
-                Log::error('[DB DEBUG] Query executed:', [
+            if (str_starts_with(strtolower($query->sql), 'insert into `products`')) {
+                Log::error('[Stage 7]', [
                     'sql' => $query->sql,
                     'bindings' => $query->bindings,
-                    'time' => $query->time,
                 ]);
             }
         });

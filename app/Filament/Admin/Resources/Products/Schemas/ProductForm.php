@@ -12,6 +12,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Illuminate\Support\Facades\Log;
 
 class ProductForm
 {
@@ -19,14 +20,32 @@ class ProductForm
     {
         return $schema
             ->afterHydrate(function ($state) {
-                Log::error('[FILAMENT DEBUG] AFTER HYDRATE form state:', $state);
+                Log::error('[Stage 1]', [
+                    'thumbnail' => $state['thumbnail'] ?? null,
+                    'thumbnail_type' => gettype($state['thumbnail'] ?? null),
+                    'data_keys' => array_keys($state),
+                ]);
+            })
+            ->beforeStateDehydrated(function ($component, $state) {
+                Log::error('[Stage 2]', [
+                    'thumbnail' => $state['thumbnail'] ?? null,
+                    'thumbnail_type' => gettype($state['thumbnail'] ?? null),
+                    'data_keys' => array_keys($state),
+                ]);
             })
             ->beforeSave(function ($state) {
-                Log::error('[FILAMENT DEBUG] BEFORE SAVE form state:', $state);
+                Log::error('[Stage after saveUploadedFiles]', [
+                    'thumbnail' => $state['thumbnail'] ?? null,
+                    'thumbnail_type' => gettype($state['thumbnail'] ?? null),
+                    'data_keys' => array_keys($state),
+                ]);
             })
             ->afterSave(function ($state, $record) {
-                Log::error('[FILAMENT DEBUG] AFTER SAVE form state:', $state);
-                Log::error('[FILAMENT DEBUG] AFTER SAVE record data:', $record->attributesToArray());
+                Log::error('[Stage after model save]', [
+                    'thumbnail' => $record->thumbnail ?? null,
+                    'thumbnail_type' => gettype($record->thumbnail ?? null),
+                    'record_keys' => array_keys($record->attributesToArray()),
+                ]);
             })
             ->components([
                 Select::make('category_id')
@@ -107,7 +126,18 @@ class ProductForm
                     ->imageResizeTargetHeight(1200)
                     ->imageResizeUpscale(false)
                     ->openable()
-                    ->downloadable(),
+                    ->downloadable()
+                    ->saveUploadedFileUsing(function ($component, $file) {
+                        Log::error('[File Upload Callback Start]', [
+                            'file_class' => get_class($file),
+                        ]);
+                        $result = $component->saveUploadedFile($file);
+                        Log::error('[File Upload Callback End]', [
+                            'result' => $result,
+                            'result_type' => gettype($result),
+                        ]);
+                        return $result;
+                    }),
 
                 Toggle::make('status')
                     ->label('Active')
